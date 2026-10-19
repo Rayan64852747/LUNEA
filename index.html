@@ -1492,7 +1492,7 @@ function pers(){return PERS.afrique}
 function applyPers(){var p=pers();$("lcpN").textContent=p.n;$("lcp").setAttribute("aria-label","Parler à "+p.n+", ton assistante IA");$("cpH").src=p.head;$("cpT").textContent=p.n;desHome()}
 function cpBubble(t,me,mk,ai){var q=t.replace(/[<>&]/g,function(c){return{"<":"&lt;",">":"&gt;","&":"&amp;"}[c]});return me?'<div class="cpb me" translate="no">'+q+'</div>'+(mk&&mk.length?'<p class="cpMk"><span>Masqué avant l’envoi :</span> '+mk.map(function(x){return'<span>'+x+'</span>'}).join(", ")+'</p>':''):'<div class="cpr"><img class="cph" alt="" src="'+pers().head+'"><div class="cpb"'+(ai?' translate="no"':'')+'>'+q+'</div></div>'}
 function renderCp(){applyPers();var nm=(P.name||"").trim().split(/\s+/)[0]||"toi";
-$("cpL").innerHTML=cpBubble("Salut "+nm+" ! Je suis "+pers().n+". Pose-moi une question ou choisis-en une en bas.")+CPS.msgs.map(function(x){return cpBubble(x[0],x[1],x[2],x[3])}).join("");
+$("cpL").innerHTML=cpBubble("Salut "+nm+" ! Je suis "+pers().n+". Pose-moi une question ou choisis-en une en bas.")+CPS.msgs.map(function(x){return cpBubble(x[0],x[1],x[2],x[3])+(x[4]?'<p class="cpErr" translate="no">Détail : '+esc(x[4])+'</p>':'')}).join("");
 $("cpQ").innerHTML=CPQ[CPS.mode].map(function(q){return'<button type="button" data-q="'+q[1]+'" data-t="'+q[0]+'">'+q[0]+'</button>'}).join("");
 $("cpN").textContent=P.aiOk===false?"Réponses préparées à partir de tes données · ne remplace pas un avis médical.":"Questions libres : IA de Google · évite les noms et adresses · pas un avis médical."}
 
@@ -1548,7 +1548,7 @@ $("cpL").appendChild(el);var sc=$("cpSc");setTimeout(function(){try{sc.scrollTo(
 function cpAsk(text,qid,voice){if(CPB.busy)return;CPB.busy=true;try{speechSynthesis.cancel()}catch(e){}
 CPS.msgs.push([text,true]);var SB=cpStreamer(CPS.msgs.length-1,text);renderCp();cpScroll();desState("think");
 var t0=Date.now();window.cpT0=t0;(qid?BRAIN.reply(text,qid):aiConsent().then(function(ok){desState("think");var hit=ok?aiCacheGet(text):null;if(hit)return{t:hit+"\n\n"+(lang==="en"?"(Answer already given, saved on your phone.)":"(Réponse déjà donnée, gardée sur ton téléphone.)"),ai:1,masked:anon(text).masked};
-if(!ok||aiCount()>=20)return BRAIN.reply(text,null).then(function(r){if(ok)r.t+="\n\n(Limite de questions libres atteinte pour aujourd’hui : réponse préparée.)";return r});return aiAsk(text,SB.onChunk).catch(function(er){if(SB.on){SB.done(SB.tg+"\n\n"+(lang==="en"?"(Answer interrupted.)":"(Réponse interrompue.)"));return{streamed:1}}var dt=("v32 · "+Math.round((Date.now()-(window.cpT0||Date.now()))/1000)+" s · App Check : "+(window.ACst||"?")+" · "+String(er&&(er.code||"")+" "+(er.message||er))).replace(/\s+/g," ").trim().slice(0,420);try{console.warn("IA",er)}catch(x){}return BRAIN.reply(text,null).then(function(r){r.t+="\n\n(L’IA n’est pas disponible pour le moment : réponse préparée.)";r.err=dt;return r})})})).then(function(r){if(r.streamed||(r.ai&&SB.on)){if(!r.streamed)SB.done(r.t);CPB.busy=false;desState("done");return}if(r.masked&&r.masked.length)CPS.msgs[CPS.msgs.length-1][2]=r.masked;setTimeout(function(){CPS.msgs.push([r.t,false,null,r.ai?1:0,r.err||""]);renderCp();cpScroll();cpType(r.ai);CPB.busy=false;
+if(!ok||aiCount()>=20)return BRAIN.reply(text,null).then(function(r){if(ok)r.t+="\n\n(Limite de questions libres atteinte pour aujourd’hui : réponse préparée.)";return r});return aiAsk(text,SB.onChunk).catch(function(er){if(SB.on){SB.done(SB.tg+"\n\n"+(lang==="en"?"(Answer interrupted.)":"(Réponse interrompue.)"));return{streamed:1}}var dt=("v33 · "+Math.round((Date.now()-(window.cpT0||Date.now()))/1000)+" s · App Check : "+(window.ACst||"?")+" · "+String(er&&(er.code||"")+" "+(er.message||er))).replace(/\s+/g," ").trim().slice(0,700);try{console.warn("IA",er)}catch(x){}return BRAIN.reply(text,null).then(function(r){r.t+="\n\n(L’IA n’est pas disponible pour le moment : réponse préparée.)";r.err=dt;return r})})})).then(function(r){if(r.streamed||(r.ai&&SB.on)){if(!r.streamed)SB.done(r.t);CPB.busy=false;desState("done");return}if(r.masked&&r.masked.length)CPS.msgs[CPS.msgs.length-1][2]=r.masked;setTimeout(function(){CPS.msgs.push([r.t,false,null,r.ai?1:0,r.err||""]);renderCp();cpScroll();cpType(r.ai);CPB.busy=false;
 desState("done")},Math.max(0,650-(Date.now()-t0)))},function(){CPB.busy=false;desState("error")})}
 var TYP={iv:null};
 function cpStreamer(uidx,text){var o={on:false,el:null,tg:"",sh:0,iv:null,idx:-1,fin:false},rm=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -1960,14 +1960,17 @@ pull:async uid=>{let s;try{s=await F.getDocFromServer(ref(uid))}catch(e){if(e&&e
 push:(uid,data,c)=>F.setDoc(ref(uid),{data,c,v:1,t:F.serverTimestamp()}),
 del:async uid=>{const u=auth.currentUser;await F.deleteDoc(ref(uid));await A.deleteUser(u)},
 warm:()=>getAI().catch(()=>{}),
-ask:async (sys,prompt,onChunk)=>{const G=await getAI();const X=G.X;let last;
-for(const name of ["gemini-3.8-flash","gemini-flash-latest","gemini-2.5-flash"]){for(const think of [true,false]){
-const cfg={maxOutputTokens:2048,temperature:.55};if(think){if(name.indexOf("gemini-2.5")===0)cfg.thinkingConfig={thinkingBudget:0};else cfg.thinkingConfig={thinkingLevel:G.TL}}
-try{const m=X.getGenerativeModel(G.ai,{model:name,systemInstruction:sys,generationConfig:cfg});let t="";
-if(onChunk&&m.generateContentStream){const r=await m.generateContentStream(prompt);for await(const ch of r.stream){let x="";try{x=ch.text()}catch(e){}if(x){t+=x;onChunk(t)}}}
-else{const r=await m.generateContent(prompt);t=r.response.text()}
-if(t&&t.trim())return t.trim();last=new Error("empty");break}
-catch(e){last=e;const msg=String(e&&e.message||e);if(think&&/thinking/i.test(msg))continue;if(/not.?found|404|unsupported|is not supported/i.test(msg))break;throw e}}}throw last}
+ask:async (sys,prompt,onChunk)=>{const G=await getAI();const X=G.X;let last,errs=[];
+for(const name of ["gemini-3.8-flash","gemini-flash-latest","gemini-2.5-flash"]){let nf=false;
+for(const at of [{th:1,st:1},{th:0,st:1},{th:0,st:0}]){
+const cfg={maxOutputTokens:2048,temperature:.55};if(at.th){if(name.indexOf("gemini-2.5")===0)cfg.thinkingConfig={thinkingBudget:0};else cfg.thinkingConfig={thinkingLevel:G.TL}}
+let got="";try{const m=X.getGenerativeModel(G.ai,{model:name,systemInstruction:sys,generationConfig:cfg});
+if(at.st&&onChunk&&m.generateContentStream){const r=await m.generateContentStream(prompt);for await(const ch of r.stream){let x="";try{x=ch.text()}catch(e){}if(x){got+=x;onChunk(got)}}}
+else{const r=await m.generateContent(prompt);got=r.response.text()}
+if(got&&got.trim())return got.trim();last=new Error("réponse vide")}
+catch(e){last=e;const msg=String(e&&e.message||e);errs.push(name+(at.th?"+think":"")+(at.st?"+stream":"")+": "+msg.slice(0,90));if(got)throw e;if(/not.?found|404/i.test(msg)){nf=true;break}}}
+if(!nf)break}
+if(last)last.message=(last.message||"")+" || "+errs.join(" | ");throw last}
 };
 }catch(e){window.LF=null;window.LFerr=String(e&&e.message||e);console.warn("Firebase indisponible",e)}
 window.dispatchEvent(new Event("lf-ready"));
