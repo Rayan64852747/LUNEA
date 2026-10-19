@@ -958,7 +958,7 @@ function syApply(r,uid){SY.mute=1;try{SK.forEach(function(k){_rm.call(localStora
 var m=syMeta();syMetaSet({uid:uid,lt:r.c||Date.now(),st:Date.now(),email:m.uid===uid?m.email:""});
 try{P=JSON.parse(localStorage.getItem("lunea-profile")||"{}")||{}}catch(e){P={}}if(window.cyM)cyM.c=null;try{cyM.c=null}catch(e){}
 try{applyPers()}catch(e){}document.body.classList.toggle("discret",!!P.discret)}
-function syReset(){clearTimeout(SY.t);SY.t=null;SY.mute=1;try{SK.concat(["lunea-sync"]).forEach(function(k){_rm.call(localStorage,k)});Object.keys(localStorage).forEach(function(k){if(k.indexOf("lunea-nt-")===0)_rm.call(localStorage,k)})}catch(e){}SY.mute=0;SY.user=null}
+function syReset(){clearTimeout(SY.t);SY.t=null;SY.mute=1;try{SK.concat(["lunea-sync","lunea-aic"]).forEach(function(k){_rm.call(localStorage,k)});Object.keys(localStorage).forEach(function(k){if(k.indexOf("lunea-nt-")===0)_rm.call(localStorage,k)})}catch(e){}SY.mute=0;SY.user=null}
 function syLine(){var m=syMeta();if(!navigator.onLine)return"Hors connexion : la sauvegarde reprendra au retour d’internet.";if(SY.t||SY.inflight)return"Sauvegarde en cours…";
 if(m.st){var d=new Date(m.st),t=d.toLocaleTimeString(LOC(),{hour:"2-digit",minute:"2-digit"});return"Dernière sauvegarde : "+(same(d,new Date())?t:d.toLocaleDateString(LOC(),{day:"numeric",month:"long"})+" "+t)}return"Sauvegarde en cours…"}
 function syShow(){var el=document.getElementById("mnSy");if(el)el.textContent=syLine()}
@@ -1078,7 +1078,7 @@ else if(a==="fin"){if(!$("cgu").checked){$("e5").textContent="Pour continuer, ac
 $("e5").textContent="";P.discret=$("dis").checked;P.stats=$("sta").checked;P.done=true;save();show("done")}
 else if(a==="enter"){HM.mode=P.parc==="enceinte"?"preg":P.parc==="postpartum"?"pp":"cycle";openHome()}
 else if(a==="soon")say("La page suivante arrive bientôt.");
-else if(a==="restart"){P={};try{SY.mute=1;SK.forEach(function(k){localStorage.removeItem(k)});SY.mute=0}catch(e){}cyM.c=null;
+else if(a==="restart"){P={};try{SY.mute=1;SK.concat(["lunea-aic"]).forEach(function(k){localStorage.removeItem(k)});SY.mute=0}catch(e){}cyM.c=null;
 document.querySelectorAll(".app input").forEach(function(i){if(i.type==="checkbox"||i.type==="radio")i.checked=false;else i.value=""});$("dis").checked=false;$("emGo").disabled=true;$("emE").textContent="";$("n2").disabled=true;stack=[];closeApp()}
 }
 app.addEventListener("click",function(e){var b=e.target.closest("[data-act]");if(!b)return;e.preventDefault();act(b.dataset.act,b)});
@@ -1529,17 +1529,23 @@ var AISYS="Tu es Désirée, l’assistante de l’application Lunéa, qui accomp
 function aiCtx(){var m=HM.mode,c="";try{if(m==="preg"){var G=gp();if(G){var l=lmpOf(G),w=Math.floor((today-l)/6048e5)+1;c="Contexte estimé par l’app : enceinte, semaine "+w+" d’aménorrhée."}}
 else if(m==="pp"){var Q=qp();if(Q){var dd2=Math.round((today-D(Q.date))/864e5);c="Contexte estimé par l’app : post-partum, environ "+Math.max(0,Math.floor(dd2/7))+" semaines après l’accouchement."}}
 else{var p=phase(today);if(p)c="Contexte estimé par l’app : suivi du cycle, jour "+p.n+" ("+PH[p.k][0]+")."+(P.contra&&P.contra.m?" Contraception : "+coLab(P.contra.m)+".":"")}}catch(e){}return c}
+function aiKey(t){return HM.mode+"|"+lang+"|"+nrm(anon(t).t).replace(/[^\p{L}\p{N} ]/gu," ").replace(/\s+/g," ").trim()}
+function aiOkLen(t){return nrm(t).trim().split(" ").filter(Boolean).length>=4}
+function aiCache(){try{return JSON.parse(localStorage.getItem("lunea-aic"))||{}}catch(e){return{}}}
+function aiCacheGet(t){if(!aiOkLen(t))return null;var c=aiCache(),e=c[aiKey(t)];if(!e||Date.now()-e.d>30*864e5)return null;return e.t}
+function aiCachePut(t,a){if(!aiOkLen(t))return;var c=aiCache(),k;c[aiKey(t)]={t:a,d:Date.now()};var ks=Object.keys(c).sort(function(x,y){return c[x].d-c[y].d});while(ks.length>60){delete c[ks.shift()]}try{_set.call(localStorage,"lunea-aic",JSON.stringify(c))}catch(e){}}
 function aiCount(){var k="lunea-ai-"+iso(today);try{return+(localStorage.getItem(k)||0)}catch(e){return 0}}
 function aiInc(){var k="lunea-ai-"+iso(today);try{_set.call(localStorage,k,String(aiCount()+1))}catch(e){}}
 function aiAsk(text){var A=anon(text),hist=CPS.msgs.slice(-5,-1).map(function(m){return(m[1]?"Utilisatrice : ":"Désirée : ")+anon(m[0]).t}).join("\n");
 var prompt=(aiCtx()?aiCtx()+"\n":"")+(lang==="en"?"Réponds en anglais.\n":"")+(hist?"Échanges précédents :\n"+hist+"\n":"")+"Question : "+A.t;
-return lfReady().then(function(lf){if(!lf||!lf.ask)throw new Error("Firebase non chargé : "+(window.LFerr||"?"));return Promise.race([lf.ask(AISYS,prompt),new Promise(function(r,j){setTimeout(function(){j(new Error("timeout"))},25000)})])}).then(function(t){aiInc();return{t:t.replace(/\*\*|__|^#+\s*/gm,"").replace(/^\s*[-*]\s+/gm,"• "),ai:1,masked:A.masked}})}
+return lfReady().then(function(lf){if(!lf||!lf.ask)throw new Error("Firebase non chargé : "+(window.LFerr||"?"));return Promise.race([lf.ask(AISYS,prompt),new Promise(function(r,j){setTimeout(function(){j(new Error("timeout (60 s)"))},60000)})])}).then(function(t){aiInc();aiCachePut(text,t.replace(/\*\*|__|^#+\s*/gm,"").replace(/^\s*[-*]\s+/gm,"• "));return{t:t.replace(/\*\*|__|^#+\s*/gm,"").replace(/^\s*[-*]\s+/gm,"• "),ai:1,masked:A.masked}})}
 function aiConsent(){return new Promise(function(res){if(P.aiOk===true){res(true);return}if(P.aiOk===false){res(false);return}
 var el=document.createElement("div");el.className="cpr cpAsk";el.innerHTML='<img class="cph" alt="" src="'+pers().head+'"><div class="cpb"><span>Pour répondre à tes questions libres, j’utilise l’IA Gemini de Google. Ta question est envoyée sans ton nom, ton e-mail ni ton journal, et les noms, numéros et lieux sont masqués automatiquement. Google peut utiliser les questions pour améliorer ses services. Évite quand même d’écrire des noms ou ton adresse.</span><div class="xrow" style="margin-top:10px"><button type="button" class="xghost" data-ai="0">Non merci</button><button type="button" class="xsave sm" data-ai="1">J’accepte</button></div></div>';
 $("cpL").appendChild(el);var sc=$("cpSc");setTimeout(function(){try{sc.scrollTo({top:sc.scrollHeight,behavior:"smooth"})}catch(e){sc.scrollTop=sc.scrollHeight}},50);el.addEventListener("click",function(e){var b=e.target.closest("[data-ai]");if(!b)return;P.aiOk=b.dataset.ai==="1";save();el.remove();res(P.aiOk)})})}
 function cpAsk(text,qid,voice){if(CPB.busy)return;CPB.busy=true;try{speechSynthesis.cancel()}catch(e){}
 CPS.msgs.push([text,true]);renderCp();cpScroll();desState("think");
-var t0=Date.now();(qid?BRAIN.reply(text,qid):aiConsent().then(function(ok){desState("think");if(!ok||aiCount()>=20)return BRAIN.reply(text,null).then(function(r){if(ok)r.t+="\n\n(Limite de questions libres atteinte pour aujourd’hui : réponse préparée.)";return r});return aiAsk(text).catch(function(er){var dt=("v29 · App Check : "+(window.ACst||"?")+" · "+String(er&&(er.code||"")+" "+(er.message||er))).replace(/\s+/g," ").trim().slice(0,420);try{console.warn("IA",er)}catch(x){}return BRAIN.reply(text,null).then(function(r){r.t+="\n\n(L’IA n’est pas disponible pour le moment : réponse préparée.)";r.err=dt;return r})})})).then(function(r){if(r.masked&&r.masked.length)CPS.msgs[CPS.msgs.length-1][2]=r.masked;setTimeout(function(){CPS.msgs.push([r.t,false,null,r.ai?1:0,r.err||""]);renderCp();cpScroll();CPB.busy=false;
+var t0=Date.now();window.cpT0=t0;(qid?BRAIN.reply(text,qid):aiConsent().then(function(ok){desState("think");var hit=ok?aiCacheGet(text):null;if(hit)return{t:hit+"\n\n"+(lang==="en"?"(Answer already given, saved on your phone.)":"(Réponse déjà donnée, gardée sur ton téléphone.)"),ai:1,masked:anon(text).masked};
+if(!ok||aiCount()>=20)return BRAIN.reply(text,null).then(function(r){if(ok)r.t+="\n\n(Limite de questions libres atteinte pour aujourd’hui : réponse préparée.)";return r});return aiAsk(text).catch(function(er){var dt=("v31 · "+Math.round((Date.now()-(window.cpT0||Date.now()))/1000)+" s · App Check : "+(window.ACst||"?")+" · "+String(er&&(er.code||"")+" "+(er.message||er))).replace(/\s+/g," ").trim().slice(0,420);try{console.warn("IA",er)}catch(x){}return BRAIN.reply(text,null).then(function(r){r.t+="\n\n(L’IA n’est pas disponible pour le moment : réponse préparée.)";r.err=dt;return r})})})).then(function(r){if(r.masked&&r.masked.length)CPS.msgs[CPS.msgs.length-1][2]=r.masked;setTimeout(function(){CPS.msgs.push([r.t,false,null,r.ai?1:0,r.err||""]);renderCp();cpScroll();CPB.busy=false;
 desState("done")},Math.max(0,650-(Date.now()-t0)))},function(){CPB.busy=false;desState("error")})}
 function cpScroll(){var c=$("cpSc"),t=$("cpTy"),b=t&&!t.hidden?t:$("cpL").lastElementChild;if(!c||!b)return;var top=b.offsetTop-c.offsetTop-12;try{c.scrollTo({top:Math.max(0,top),behavior:"smooth"})}catch(e){c.scrollTop=top}}
 var SPK={iv:null,syl:0,boost:0};
@@ -1939,7 +1945,7 @@ pull:async uid=>{let s;try{s=await F.getDocFromServer(ref(uid))}catch(e){if(e&&e
 push:(uid,data,c)=>F.setDoc(ref(uid),{data,c,v:1,t:F.serverTimestamp()}),
 del:async uid=>{const u=auth.currentUser;await F.deleteDoc(ref(uid));await A.deleteUser(u)},
 ask:async (sys,prompt)=>{const X=await import(B+"firebase-ai.js");const ai=X.getAI(app,{backend:new X.GoogleAIBackend()});let last;
-for(const name of ["gemini-3.8-flash","gemini-flash-latest","gemini-2.5-flash"]){try{const m=X.getGenerativeModel(ai,{model:name,systemInstruction:sys,generationConfig:{maxOutputTokens:600,temperature:.55}});const r=await m.generateContent(prompt);const t=r.response.text();if(t&&t.trim())return t.trim();last=new Error("empty")}catch(e){last=e;const msg=String(e&&e.message||e);if(!/not.?found|404|unsupported|is not supported/i.test(msg))break}}throw last}
+for(const name of ["gemini-3.8-flash","gemini-flash-latest","gemini-2.5-flash"]){try{const m=X.getGenerativeModel(ai,{model:name,systemInstruction:sys,generationConfig:{maxOutputTokens:2048,temperature:.55}});const r=await m.generateContent(prompt);const t=r.response.text();if(t&&t.trim())return t.trim();last=new Error("empty")}catch(e){last=e;const msg=String(e&&e.message||e);if(!/not.?found|404|unsupported|is not supported/i.test(msg))break}}throw last}
 };
 }catch(e){window.LF=null;window.LFerr=String(e&&e.message||e);console.warn("Firebase indisponible",e)}
 window.dispatchEvent(new Event("lf-ready"));
