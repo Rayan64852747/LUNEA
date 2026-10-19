@@ -1916,7 +1916,10 @@ const CFG={apiKey:"AIzaSyAEY9LiSBcHYHvXAONdQ2LRnd7Ssl4-LZ8",authDomain:"lunea-8d
 const B="https://www.gstatic.com/firebasejs/12.19.0/";
 try{
 const [AP,A,F]=await Promise.all([import(B+"firebase-app.js"),import(B+"firebase-auth.js"),import(B+"firebase-firestore.js")]);
-const app=AP.initializeApp(CFG),auth=A.getAuth(app);
+const app=AP.initializeApp(CFG);
+/* App Check (Fraud Defense / reCAPTCHA Enterprise) : protège le quota de l'IA */
+try{const AC=await import(B+"firebase-app-check.js");AC.initializeAppCheck(app,{provider:new AC.ReCaptchaEnterpriseProvider("6LcuGfctAAAAAP1BWlJwaKtep_guZyaGU0w446e5"),isTokenAutoRefreshEnabled:true})}catch(e){console.warn("App Check indisponible",e)}
+const auth=A.getAuth(app);
 let db;try{db=F.initializeFirestore(app,{localCache:F.persistentLocalCache()})}catch(e){db=F.getFirestore(app)}
 const ref=uid=>F.doc(db,"users",uid);
 window.LF={
