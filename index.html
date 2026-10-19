@@ -523,6 +523,7 @@ body.inhome #welcome,body.inhome #app{display:none!important}
 #cp .cpr img.cph{width:30px;height:30px}
 #cp .cpTy{margin-left:38px}
 #cp .cpMk{align-self:flex-end;margin:-4px 2px 0;font:700 11px Quicksand,sans-serif;color:#7A4A64;background:rgba(255,255,255,.6);padding:2px 8px;border-radius:99px}
+#cp .cpErr{margin:-2px 0 0 38px;font:600 10.5px/1.35 monospace;color:#7A2A44;background:rgba(255,255,255,.7);padding:4px 8px;border-radius:8px;word-break:break-word}
 #cp .cpAsk .cpb{max-width:88%}#cp .cpAsk .xrow{display:flex;gap:8px}#cp .cpAsk .xrow button{flex:1;min-height:42px}
 #cp .cpq{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 98px);z-index:2;flex-direction:row;flex-wrap:nowrap;gap:8px;overflow-x:auto;padding:0 12px 4px;margin:0;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 #cp .cpq::-webkit-scrollbar{display:none}
@@ -1489,7 +1490,7 @@ function pers(){return PERS.afrique}
 function applyPers(){var p=pers();$("lcpN").textContent=p.n;$("lcp").setAttribute("aria-label","Parler à "+p.n+", ton assistante IA");$("cpH").src=p.head;$("cpT").textContent=p.n;desHome()}
 function cpBubble(t,me,mk,ai){var q=t.replace(/[<>&]/g,function(c){return{"<":"&lt;",">":"&gt;","&":"&amp;"}[c]});return me?'<div class="cpb me" translate="no">'+q+'</div>'+(mk&&mk.length?'<p class="cpMk"><span>Masqué avant l’envoi :</span> '+mk.map(function(x){return'<span>'+x+'</span>'}).join(", ")+'</p>':''):'<div class="cpr"><img class="cph" alt="" src="'+pers().head+'"><div class="cpb"'+(ai?' translate="no"':'')+'>'+q+'</div></div>'}
 function renderCp(){applyPers();var nm=(P.name||"").trim().split(/\s+/)[0]||"toi";
-$("cpL").innerHTML=cpBubble("Salut "+nm+" ! Je suis "+pers().n+". Pose-moi une question ou choisis-en une en bas.")+CPS.msgs.map(function(x){return cpBubble(x[0],x[1],x[2],x[3])}).join("");
+$("cpL").innerHTML=cpBubble("Salut "+nm+" ! Je suis "+pers().n+". Pose-moi une question ou choisis-en une en bas.")+CPS.msgs.map(function(x){return cpBubble(x[0],x[1],x[2],x[3])+(x[4]?'<p class="cpErr" translate="no">Détail : '+esc(x[4])+'</p>':'')}).join("");
 $("cpQ").innerHTML=CPQ[CPS.mode].map(function(q){return'<button type="button" data-q="'+q[1]+'" data-t="'+q[0]+'">'+q[0]+'</button>'}).join("");
 $("cpN").textContent=P.aiOk===false?"Réponses préparées à partir de tes données · ne remplace pas un avis médical.":"Questions libres : IA de Google · évite les noms et adresses · pas un avis médical."}
 
@@ -1532,13 +1533,13 @@ function aiCount(){var k="lunea-ai-"+iso(today);try{return+(localStorage.getItem
 function aiInc(){var k="lunea-ai-"+iso(today);try{_set.call(localStorage,k,String(aiCount()+1))}catch(e){}}
 function aiAsk(text){var A=anon(text),hist=CPS.msgs.slice(-5,-1).map(function(m){return(m[1]?"Utilisatrice : ":"Désirée : ")+anon(m[0]).t}).join("\n");
 var prompt=(aiCtx()?aiCtx()+"\n":"")+(lang==="en"?"Réponds en anglais.\n":"")+(hist?"Échanges précédents :\n"+hist+"\n":"")+"Question : "+A.t;
-return lfReady().then(function(lf){if(!lf||!lf.ask)throw new Error("noai");return Promise.race([lf.ask(AISYS,prompt),new Promise(function(r,j){setTimeout(function(){j(new Error("timeout"))},25000)})])}).then(function(t){aiInc();return{t:t.replace(/\*\*|__|^#+\s*/gm,"").replace(/^\s*[-*]\s+/gm,"• "),ai:1,masked:A.masked}})}
+return lfReady().then(function(lf){if(!lf||!lf.ask)throw new Error("Firebase non chargé : "+(window.LFerr||"?"));return Promise.race([lf.ask(AISYS,prompt),new Promise(function(r,j){setTimeout(function(){j(new Error("timeout"))},25000)})])}).then(function(t){aiInc();return{t:t.replace(/\*\*|__|^#+\s*/gm,"").replace(/^\s*[-*]\s+/gm,"• "),ai:1,masked:A.masked}})}
 function aiConsent(){return new Promise(function(res){if(P.aiOk===true){res(true);return}if(P.aiOk===false){res(false);return}
 var el=document.createElement("div");el.className="cpr cpAsk";el.innerHTML='<img class="cph" alt="" src="'+pers().head+'"><div class="cpb"><span>Pour répondre à tes questions libres, j’utilise l’IA Gemini de Google. Ta question est envoyée sans ton nom, ton e-mail ni ton journal, et les noms, numéros et lieux sont masqués automatiquement. Google peut utiliser les questions pour améliorer ses services. Évite quand même d’écrire des noms ou ton adresse.</span><div class="xrow" style="margin-top:10px"><button type="button" class="xghost" data-ai="0">Non merci</button><button type="button" class="xsave sm" data-ai="1">J’accepte</button></div></div>';
 $("cpL").appendChild(el);var sc=$("cpSc");setTimeout(function(){try{sc.scrollTo({top:sc.scrollHeight,behavior:"smooth"})}catch(e){sc.scrollTop=sc.scrollHeight}},50);el.addEventListener("click",function(e){var b=e.target.closest("[data-ai]");if(!b)return;P.aiOk=b.dataset.ai==="1";save();el.remove();res(P.aiOk)})})}
 function cpAsk(text,qid,voice){if(CPB.busy)return;CPB.busy=true;try{speechSynthesis.cancel()}catch(e){}
 CPS.msgs.push([text,true]);renderCp();cpScroll();desState("think");
-var t0=Date.now();(qid?BRAIN.reply(text,qid):aiConsent().then(function(ok){desState("think");if(!ok||aiCount()>=20)return BRAIN.reply(text,null).then(function(r){if(ok)r.t+="\n\n(Limite de questions libres atteinte pour aujourd’hui : réponse préparée.)";return r});return aiAsk(text).catch(function(){return BRAIN.reply(text,null).then(function(r){r.t+="\n\n(L’IA n’est pas disponible pour le moment : réponse préparée.)";return r})})})).then(function(r){if(r.masked&&r.masked.length)CPS.msgs[CPS.msgs.length-1][2]=r.masked;setTimeout(function(){CPS.msgs.push([r.t,false,null,r.ai?1:0]);renderCp();cpScroll();CPB.busy=false;
+var t0=Date.now();(qid?BRAIN.reply(text,qid):aiConsent().then(function(ok){desState("think");if(!ok||aiCount()>=20)return BRAIN.reply(text,null).then(function(r){if(ok)r.t+="\n\n(Limite de questions libres atteinte pour aujourd’hui : réponse préparée.)";return r});return aiAsk(text).catch(function(er){var dt=String(er&&(er.code||"")+" "+(er.message||er)).replace(/\s+/g," ").trim().slice(0,220);try{console.warn("IA",er)}catch(x){}return BRAIN.reply(text,null).then(function(r){r.t+="\n\n(L’IA n’est pas disponible pour le moment : réponse préparée.)";r.err=dt;return r})})})).then(function(r){if(r.masked&&r.masked.length)CPS.msgs[CPS.msgs.length-1][2]=r.masked;setTimeout(function(){CPS.msgs.push([r.t,false,null,r.ai?1:0,r.err||""]);renderCp();cpScroll();CPB.busy=false;
 desState("done")},Math.max(0,650-(Date.now()-t0)))},function(){CPB.busy=false;desState("error")})}
 function cpScroll(){var c=$("cpSc"),t=$("cpTy"),b=t&&!t.hidden?t:$("cpL").lastElementChild;if(!c||!b)return;var top=b.offsetTop-c.offsetTop-12;try{c.scrollTo({top:Math.max(0,top),behavior:"smooth"})}catch(e){c.scrollTop=top}}
 var SPK={iv:null,syl:0,boost:0};
@@ -1933,7 +1934,7 @@ del:async uid=>{const u=auth.currentUser;await F.deleteDoc(ref(uid));await A.del
 ask:async (sys,prompt)=>{const X=await import(B+"firebase-ai.js");const ai=X.getAI(app,{backend:new X.GoogleAIBackend()});let last;
 for(const name of ["gemini-3.8-flash","gemini-flash-latest","gemini-2.5-flash"]){try{const m=X.getGenerativeModel(ai,{model:name,systemInstruction:sys,generationConfig:{maxOutputTokens:600,temperature:.55}});const r=await m.generateContent(prompt);const t=r.response.text();if(t&&t.trim())return t.trim();last=new Error("empty")}catch(e){last=e;const msg=String(e&&e.message||e);if(!/not.?found|404|unsupported|is not supported/i.test(msg))break}}throw last}
 };
-}catch(e){window.LF=null;console.warn("Firebase indisponible",e)}
+}catch(e){window.LF=null;window.LFerr=String(e&&e.message||e);console.warn("Firebase indisponible",e)}
 window.dispatchEvent(new Event("lf-ready"));
 </script>
 <script>if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostname==="localhost")){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
