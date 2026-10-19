@@ -1539,7 +1539,7 @@ var el=document.createElement("div");el.className="cpr cpAsk";el.innerHTML='<img
 $("cpL").appendChild(el);var sc=$("cpSc");setTimeout(function(){try{sc.scrollTo({top:sc.scrollHeight,behavior:"smooth"})}catch(e){sc.scrollTop=sc.scrollHeight}},50);el.addEventListener("click",function(e){var b=e.target.closest("[data-ai]");if(!b)return;P.aiOk=b.dataset.ai==="1";save();el.remove();res(P.aiOk)})})}
 function cpAsk(text,qid,voice){if(CPB.busy)return;CPB.busy=true;try{speechSynthesis.cancel()}catch(e){}
 CPS.msgs.push([text,true]);renderCp();cpScroll();desState("think");
-var t0=Date.now();(qid?BRAIN.reply(text,qid):aiConsent().then(function(ok){desState("think");if(!ok||aiCount()>=20)return BRAIN.reply(text,null).then(function(r){if(ok)r.t+="\n\n(Limite de questions libres atteinte pour aujourd’hui : réponse préparée.)";return r});return aiAsk(text).catch(function(er){var dt=("v27 · App Check : "+(window.ACst||"?")+" · "+String(er&&(er.code||"")+" "+(er.message||er))).replace(/\s+/g," ").trim().slice(0,420);try{console.warn("IA",er)}catch(x){}return BRAIN.reply(text,null).then(function(r){r.t+="\n\n(L’IA n’est pas disponible pour le moment : réponse préparée.)";r.err=dt;return r})})})).then(function(r){if(r.masked&&r.masked.length)CPS.msgs[CPS.msgs.length-1][2]=r.masked;setTimeout(function(){CPS.msgs.push([r.t,false,null,r.ai?1:0,r.err||""]);renderCp();cpScroll();CPB.busy=false;
+var t0=Date.now();(qid?BRAIN.reply(text,qid):aiConsent().then(function(ok){desState("think");if(!ok||aiCount()>=20)return BRAIN.reply(text,null).then(function(r){if(ok)r.t+="\n\n(Limite de questions libres atteinte pour aujourd’hui : réponse préparée.)";return r});return aiAsk(text).catch(function(er){var dt=("v28 · App Check : "+(window.ACst||"?")+" · "+String(er&&(er.code||"")+" "+(er.message||er))).replace(/\s+/g," ").trim().slice(0,420);try{console.warn("IA",er)}catch(x){}return BRAIN.reply(text,null).then(function(r){r.t+="\n\n(L’IA n’est pas disponible pour le moment : réponse préparée.)";r.err=dt;return r})})})).then(function(r){if(r.masked&&r.masked.length)CPS.msgs[CPS.msgs.length-1][2]=r.masked;setTimeout(function(){CPS.msgs.push([r.t,false,null,r.ai?1:0,r.err||""]);renderCp();cpScroll();CPB.busy=false;
 desState("done")},Math.max(0,650-(Date.now()-t0)))},function(){CPB.busy=false;desState("error")})}
 function cpScroll(){var c=$("cpSc"),t=$("cpTy"),b=t&&!t.hidden?t:$("cpL").lastElementChild;if(!c||!b)return;var top=b.offsetTop-c.offsetTop-12;try{c.scrollTo({top:Math.max(0,top),behavior:"smooth"})}catch(e){c.scrollTop=top}}
 var SPK={iv:null,syl:0,boost:0};
@@ -1918,7 +1918,10 @@ try{
 const [AP,A,F]=await Promise.all([import(B+"firebase-app.js"),import(B+"firebase-auth.js"),import(B+"firebase-firestore.js")]);
 const app=AP.initializeApp(CFG);
 /* App Check (Fraud Defense / reCAPTCHA Enterprise) : protège le quota de l'IA */
-let ACI=null;try{const AC=await import(B+"firebase-app-check.js");ACI=AC.initializeAppCheck(app,{provider:new AC.ReCaptchaEnterpriseProvider("6LcuGfctAAAAAEMSsf6QPT5bs3OVesLjNbwGNmJw"),isTokenAutoRefreshEnabled:true});window.ACst="init";
+let ACI=null;
+/* une seule fois : effacer la pause App Check laissée par l'ancienne clé */
+try{if(localStorage.getItem("lunea-acr")!=="2"&&window.indexedDB){await new Promise(r=>{let q;try{q=indexedDB.deleteDatabase("firebase-app-check-database")}catch(e){r();return}q.onsuccess=q.onerror=q.onblocked=()=>r();setTimeout(r,1500)});localStorage.setItem("lunea-acr","2")}}catch(e){}
+try{const AC=await import(B+"firebase-app-check.js");ACI=AC.initializeAppCheck(app,{provider:new AC.ReCaptchaEnterpriseProvider("6LcuGfctAAAAAEMSsf6QPT5bs3OVesLjNbwGNmJw"),isTokenAutoRefreshEnabled:true});window.ACst="init";
 AC.getToken(ACI,false).then(r=>{window.ACst=r&&r.error?"erreur jeton : "+(r.error.message||r.error):(r&&r.token&&r.token.length>40?"jeton ok":"jeton vide")}).catch(e=>{window.ACst="échec : "+(e&&e.message||e)})}catch(e){window.ACst="non chargé : "+(e&&e.message||e);console.warn("App Check indisponible",e)}
 const auth=A.getAuth(app);
 let db;try{db=F.initializeFirestore(app,{localCache:F.persistentLocalCache()})}catch(e){db=F.getFirestore(app)}
