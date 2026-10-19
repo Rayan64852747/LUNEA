@@ -522,6 +522,8 @@ body.inhome #welcome,body.inhome #app{display:none!important}
 #cp .cpb.me{background:rgba(240,186,202,.80)}
 #cp .cpr img.cph{width:30px;height:30px}
 #cp .cpTy{margin-left:38px}
+#cp .cpb.typing::after{content:"";display:inline-block;width:2px;height:1em;margin-left:2px;vertical-align:-2px;background:#8B58D6;animation:cpCar .8s steps(1) infinite}
+@keyframes cpCar{50%{opacity:0}}
 #cp .cpMk{align-self:flex-end;margin:-4px 2px 0;font:700 11px Quicksand,sans-serif;color:#7A4A64;background:rgba(255,255,255,.6);padding:2px 8px;border-radius:99px}
 #cp .cpErr{margin:-2px 0 0 38px;font:600 10.5px/1.35 monospace;color:#7A2A44;background:rgba(255,255,255,.7);padding:4px 8px;border-radius:8px;word-break:break-word}
 #cp .cpAsk .cpb{max-width:88%}#cp .cpAsk .xrow{display:flex;gap:8px}#cp .cpAsk .xrow button{flex:1;min-height:42px}
@@ -1490,7 +1492,7 @@ function pers(){return PERS.afrique}
 function applyPers(){var p=pers();$("lcpN").textContent=p.n;$("lcp").setAttribute("aria-label","Parler à "+p.n+", ton assistante IA");$("cpH").src=p.head;$("cpT").textContent=p.n;desHome()}
 function cpBubble(t,me,mk,ai){var q=t.replace(/[<>&]/g,function(c){return{"<":"&lt;",">":"&gt;","&":"&amp;"}[c]});return me?'<div class="cpb me" translate="no">'+q+'</div>'+(mk&&mk.length?'<p class="cpMk"><span>Masqué avant l’envoi :</span> '+mk.map(function(x){return'<span>'+x+'</span>'}).join(", ")+'</p>':''):'<div class="cpr"><img class="cph" alt="" src="'+pers().head+'"><div class="cpb"'+(ai?' translate="no"':'')+'>'+q+'</div></div>'}
 function renderCp(){applyPers();var nm=(P.name||"").trim().split(/\s+/)[0]||"toi";
-$("cpL").innerHTML=cpBubble("Salut "+nm+" ! Je suis "+pers().n+". Pose-moi une question ou choisis-en une en bas.")+CPS.msgs.map(function(x){return cpBubble(x[0],x[1],x[2],x[3])+(x[4]?'<p class="cpErr" translate="no">Détail : '+esc(x[4])+'</p>':'')}).join("");
+$("cpL").innerHTML=cpBubble("Salut "+nm+" ! Je suis "+pers().n+". Pose-moi une question ou choisis-en une en bas.")+CPS.msgs.map(function(x){return cpBubble(x[0],x[1],x[2],x[3])}).join("");
 $("cpQ").innerHTML=CPQ[CPS.mode].map(function(q){return'<button type="button" data-q="'+q[1]+'" data-t="'+q[0]+'">'+q[0]+'</button>'}).join("");
 $("cpN").textContent=P.aiOk===false?"Réponses préparées à partir de tes données · ne remplace pas un avis médical.":"Questions libres : IA de Google · évite les noms et adresses · pas un avis médical."}
 
@@ -1525,7 +1527,7 @@ names.forEach(function(n){out=out.replace(new RegExp("(^|[^\\p{L}])"+rxEsc(n)+"(
 LIEUX.forEach(function(l){var re=new RegExp("(^|[^\\p{L}])"+rxEsc(l)+"(?=$|[^\\p{L}])","giu");if(re.test(out)){out=out.replace(re,"$1[lieu]");hit.lieu=1}});
 sub(/\b(rue|avenue|boulevard|lot|îlot|ilot|cité|cite|résidence|residence|immeuble)\s+[^\s,.;]+/gi,"[adresse]","addr");
 var L=[];if(hit.name)L.push("prénom");if(hit.num)L.push("numéro");if(hit.mail)L.push("e-mail");if(hit.date)L.push("date");if(hit.lieu||hit.addr)L.push("lieu");return{t:out,masked:L}}
-var AISYS="Tu es Désirée, l’assistante de l’application Lunéa, qui accompagne les femmes en Côte d’Ivoire : cycle menstruel, contraception, fertilité, grossesse, accouchement, post-partum, allaitement, bébé, couple, alimentation, sommeil, bien-être et moral. Tu tutoies, avec des phrases simples, chaleureuses et courtes (8 phrases au maximum), sans mise en forme Markdown. Règles strictes : ne pose jamais de diagnostic ; ne prescris aucun médicament et ne donne aucune dose ; dis quand il vaut mieux consulter une sage-femme ou un médecin. Si la question évoque un signe d’urgence (saignement abondant, douleur forte, fièvre pendant la grossesse ou après l’accouchement, maux de tête violents avec troubles de la vue, convulsions, malaise, perte de liquide, bébé qui bouge beaucoup moins, bébé de moins de 3 mois avec de la fièvre), dis d’abord clairement d’appeler le 185 (SAMU) ou d’aller tout de suite au centre de santé le plus proche. En cas de détresse ou de pensées de se faire du mal, réponds avec douceur, encourage à en parler tout de suite à une personne de confiance et à un professionnel, et à appeler le 185 en cas de danger immédiat. Ne réponds qu’à ces thèmes de santé et de bien-être ; pour toute autre demande, explique gentiment que tu ne peux aider que sur ces sujets. Ne demande jamais d’informations personnelles (nom, adresse, numéro). Les mentions entre crochets comme [prénom] ou [lieu] ont été masquées pour protéger la vie privée : ignore-les. Si tu n’es pas sûre, dis-le simplement.";
+var AISYS="Tu es Désirée, l’assistante de l’application Lunéa, qui accompagne les femmes en Côte d’Ivoire : cycle menstruel, contraception, fertilité, grossesse, accouchement, post-partum, allaitement, bébé, couple, alimentation, sommeil, bien-être et moral. Tu tutoies, avec des phrases simples, chaleureuses et courtes (6 phrases au maximum, va droit au but), sans mise en forme Markdown. Règles strictes : ne pose jamais de diagnostic ; ne prescris aucun médicament et ne donne aucune dose ; dis quand il vaut mieux consulter une sage-femme ou un médecin. Si la question évoque un signe d’urgence (saignement abondant, douleur forte, fièvre pendant la grossesse ou après l’accouchement, maux de tête violents avec troubles de la vue, convulsions, malaise, perte de liquide, bébé qui bouge beaucoup moins, bébé de moins de 3 mois avec de la fièvre), dis d’abord clairement d’appeler le 185 (SAMU) ou d’aller tout de suite au centre de santé le plus proche. En cas de détresse ou de pensées de se faire du mal, réponds avec douceur, encourage à en parler tout de suite à une personne de confiance et à un professionnel, et à appeler le 185 en cas de danger immédiat. Ne réponds qu’à ces thèmes de santé et de bien-être ; pour toute autre demande, explique gentiment que tu ne peux aider que sur ces sujets. Ne demande jamais d’informations personnelles (nom, adresse, numéro). Les mentions entre crochets comme [prénom] ou [lieu] ont été masquées pour protéger la vie privée : ignore-les. Si tu n’es pas sûre, dis-le simplement.";
 function aiCtx(){var m=HM.mode,c="";try{if(m==="preg"){var G=gp();if(G){var l=lmpOf(G),w=Math.floor((today-l)/6048e5)+1;c="Contexte estimé par l’app : enceinte, semaine "+w+" d’aménorrhée."}}
 else if(m==="pp"){var Q=qp();if(Q){var dd2=Math.round((today-D(Q.date))/864e5);c="Contexte estimé par l’app : post-partum, environ "+Math.max(0,Math.floor(dd2/7))+" semaines après l’accouchement."}}
 else{var p=phase(today);if(p)c="Contexte estimé par l’app : suivi du cycle, jour "+p.n+" ("+PH[p.k][0]+")."+(P.contra&&P.contra.m?" Contraception : "+coLab(P.contra.m)+".":"")}}catch(e){}return c}
@@ -1536,18 +1538,30 @@ function aiCacheGet(t){if(!aiOkLen(t))return null;var c=aiCache(),e=c[aiKey(t)];
 function aiCachePut(t,a){if(!aiOkLen(t))return;var c=aiCache(),k;c[aiKey(t)]={t:a,d:Date.now()};var ks=Object.keys(c).sort(function(x,y){return c[x].d-c[y].d});while(ks.length>60){delete c[ks.shift()]}try{_set.call(localStorage,"lunea-aic",JSON.stringify(c))}catch(e){}}
 function aiCount(){var k="lunea-ai-"+iso(today);try{return+(localStorage.getItem(k)||0)}catch(e){return 0}}
 function aiInc(){var k="lunea-ai-"+iso(today);try{_set.call(localStorage,k,String(aiCount()+1))}catch(e){}}
-function aiAsk(text){var A=anon(text),hist=CPS.msgs.slice(-5,-1).map(function(m){return(m[1]?"Utilisatrice : ":"Désirée : ")+anon(m[0]).t}).join("\n");
+function aiClean(t){return String(t).replace(/\*\*|__|^#+\s*/gm,"").replace(/^\s*[-*]\s+/gm,"• ")}
+function aiAsk(text,onChunk){var A=anon(text),hist=CPS.msgs.slice(-5,-1).map(function(m){return(m[1]?"Utilisatrice : ":"Désirée : ")+anon(m[0]).t}).join("\n");
 var prompt=(aiCtx()?aiCtx()+"\n":"")+(lang==="en"?"Réponds en anglais.\n":"")+(hist?"Échanges précédents :\n"+hist+"\n":"")+"Question : "+A.t;
-return lfReady().then(function(lf){if(!lf||!lf.ask)throw new Error("Firebase non chargé : "+(window.LFerr||"?"));return Promise.race([lf.ask(AISYS,prompt),new Promise(function(r,j){setTimeout(function(){j(new Error("timeout (60 s)"))},60000)})])}).then(function(t){aiInc();aiCachePut(text,t.replace(/\*\*|__|^#+\s*/gm,"").replace(/^\s*[-*]\s+/gm,"• "));return{t:t.replace(/\*\*|__|^#+\s*/gm,"").replace(/^\s*[-*]\s+/gm,"• "),ai:1,masked:A.masked}})}
+return lfReady().then(function(lf){if(!lf||!lf.ask)throw new Error("Firebase non chargé : "+(window.LFerr||"?"));return Promise.race([lf.ask(AISYS,prompt,onChunk),new Promise(function(r,j){setTimeout(function(){j(new Error("timeout (60 s)"))},60000)})])}).then(function(t){aiInc();aiCachePut(text,t.replace(/\*\*|__|^#+\s*/gm,"").replace(/^\s*[-*]\s+/gm,"• "));return{t:t.replace(/\*\*|__|^#+\s*/gm,"").replace(/^\s*[-*]\s+/gm,"• "),ai:1,masked:A.masked}})}
 function aiConsent(){return new Promise(function(res){if(P.aiOk===true){res(true);return}if(P.aiOk===false){res(false);return}
 var el=document.createElement("div");el.className="cpr cpAsk";el.innerHTML='<img class="cph" alt="" src="'+pers().head+'"><div class="cpb"><span>Pour répondre à tes questions libres, j’utilise l’IA Gemini de Google. Ta question est envoyée sans ton nom, ton e-mail ni ton journal, et les noms, numéros et lieux sont masqués automatiquement. Google peut utiliser les questions pour améliorer ses services. Évite quand même d’écrire des noms ou ton adresse.</span><div class="xrow" style="margin-top:10px"><button type="button" class="xghost" data-ai="0">Non merci</button><button type="button" class="xsave sm" data-ai="1">J’accepte</button></div></div>';
 $("cpL").appendChild(el);var sc=$("cpSc");setTimeout(function(){try{sc.scrollTo({top:sc.scrollHeight,behavior:"smooth"})}catch(e){sc.scrollTop=sc.scrollHeight}},50);el.addEventListener("click",function(e){var b=e.target.closest("[data-ai]");if(!b)return;P.aiOk=b.dataset.ai==="1";save();el.remove();res(P.aiOk)})})}
 function cpAsk(text,qid,voice){if(CPB.busy)return;CPB.busy=true;try{speechSynthesis.cancel()}catch(e){}
-CPS.msgs.push([text,true]);renderCp();cpScroll();desState("think");
+CPS.msgs.push([text,true]);var SB=cpStreamer(CPS.msgs.length-1,text);renderCp();cpScroll();desState("think");
 var t0=Date.now();window.cpT0=t0;(qid?BRAIN.reply(text,qid):aiConsent().then(function(ok){desState("think");var hit=ok?aiCacheGet(text):null;if(hit)return{t:hit+"\n\n"+(lang==="en"?"(Answer already given, saved on your phone.)":"(Réponse déjà donnée, gardée sur ton téléphone.)"),ai:1,masked:anon(text).masked};
-if(!ok||aiCount()>=20)return BRAIN.reply(text,null).then(function(r){if(ok)r.t+="\n\n(Limite de questions libres atteinte pour aujourd’hui : réponse préparée.)";return r});return aiAsk(text).catch(function(er){var dt=("v31 · "+Math.round((Date.now()-(window.cpT0||Date.now()))/1000)+" s · App Check : "+(window.ACst||"?")+" · "+String(er&&(er.code||"")+" "+(er.message||er))).replace(/\s+/g," ").trim().slice(0,420);try{console.warn("IA",er)}catch(x){}return BRAIN.reply(text,null).then(function(r){r.t+="\n\n(L’IA n’est pas disponible pour le moment : réponse préparée.)";r.err=dt;return r})})})).then(function(r){if(r.masked&&r.masked.length)CPS.msgs[CPS.msgs.length-1][2]=r.masked;setTimeout(function(){CPS.msgs.push([r.t,false,null,r.ai?1:0,r.err||""]);renderCp();cpScroll();CPB.busy=false;
+if(!ok||aiCount()>=20)return BRAIN.reply(text,null).then(function(r){if(ok)r.t+="\n\n(Limite de questions libres atteinte pour aujourd’hui : réponse préparée.)";return r});return aiAsk(text,SB.onChunk).catch(function(er){if(SB.on){SB.done(SB.tg+"\n\n"+(lang==="en"?"(Answer interrupted.)":"(Réponse interrompue.)"));return{streamed:1}}var dt=("v32 · "+Math.round((Date.now()-(window.cpT0||Date.now()))/1000)+" s · App Check : "+(window.ACst||"?")+" · "+String(er&&(er.code||"")+" "+(er.message||er))).replace(/\s+/g," ").trim().slice(0,420);try{console.warn("IA",er)}catch(x){}return BRAIN.reply(text,null).then(function(r){r.t+="\n\n(L’IA n’est pas disponible pour le moment : réponse préparée.)";r.err=dt;return r})})})).then(function(r){if(r.streamed||(r.ai&&SB.on)){if(!r.streamed)SB.done(r.t);CPB.busy=false;desState("done");return}if(r.masked&&r.masked.length)CPS.msgs[CPS.msgs.length-1][2]=r.masked;setTimeout(function(){CPS.msgs.push([r.t,false,null,r.ai?1:0,r.err||""]);renderCp();cpScroll();cpType(r.ai);CPB.busy=false;
 desState("done")},Math.max(0,650-(Date.now()-t0)))},function(){CPB.busy=false;desState("error")})}
-function cpScroll(){var c=$("cpSc"),t=$("cpTy"),b=t&&!t.hidden?t:$("cpL").lastElementChild;if(!c||!b)return;var top=b.offsetTop-c.offsetTop-12;try{c.scrollTo({top:Math.max(0,top),behavior:"smooth"})}catch(e){c.scrollTop=top}}
+var TYP={iv:null};
+function cpStreamer(uidx,text){var o={on:false,el:null,tg:"",sh:0,iv:null,idx:-1,fin:false},rm=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+o.onChunk=function(t){o.tg=aiClean(t);if(o.on)return;o.on=true;var T=$("cpTy");if(T)T.hidden=true;var mk=anon(text).masked;if(mk.length&&CPS.msgs[uidx])CPS.msgs[uidx][2]=mk;
+CPS.msgs.push(["",false,null,1,""]);o.idx=CPS.msgs.length-1;renderCp();var L=document.querySelectorAll("#cpL .cpr .cpb");o.el=L[L.length-1];o.el.setAttribute("translate","no");o.el.classList.add("typing");cpScroll();clearInterval(TYP.iv);
+o.iv=setInterval(function(){if(!o.el||!o.el.isConnected){clearInterval(o.iv);return}if(o.sh<o.tg.length){o.sh=rm?o.tg.length:Math.min(o.tg.length,o.sh+3);o.el.textContent=o.tg.slice(0,o.sh);if(o.sh%45<3)cpScroll(true)}else if(o.fin){clearInterval(o.iv);o.el.classList.remove("typing");cpScroll(true)}},20)};
+o.done=function(t){if(t!=null)o.tg=aiClean(t);o.fin=true;if(CPS.msgs[o.idx])CPS.msgs[o.idx][0]=o.tg};return o}
+function cpType(ai){clearInterval(TYP.iv);var L=document.querySelectorAll("#cpL .cpr .cpb"),el=L[L.length-1];if(!el)return;
+var full=el.textContent;if(lang==="en"&&!ai&&window.trS)full=trS(full);
+if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches){el.textContent=full;return}
+el.setAttribute("translate","no");el.classList.add("typing");el.textContent="";var i=0,step=Math.max(1,Math.ceil(full.length/110));
+TYP.iv=setInterval(function(){if(!el.isConnected){clearInterval(TYP.iv);return}i=Math.min(full.length,i+step);el.textContent=full.slice(0,i);if(i%(step*12)<step)cpScroll(true);if(i>=full.length){clearInterval(TYP.iv);el.classList.remove("typing");cpScroll(true)}},22)}
+function cpScroll(soft){var c=$("cpSc"),t=$("cpTy"),b=t&&!t.hidden?t:$("cpL").lastElementChild;if(!c||!b)return;var top=b.offsetTop-c.offsetTop-12;if(soft)top=Math.max(top,b.offsetTop-c.offsetTop+b.offsetHeight-c.clientHeight+12);try{c.scrollTo({top:Math.max(0,top),behavior:soft?"auto":"smooth"})}catch(e){c.scrollTop=top}}
 var SPK={iv:null,syl:0,boost:0};
 function desSpeak(text,mood){var a=desChat();if(!("speechSynthesis" in window)){say("La lecture à voix haute n’est pas disponible sur cet appareil.");a.setState("done");return}
 try{speechSynthesis.cancel()}catch(e){}var u=new SpeechSynthesisUtterance(lang==="en"?trS(text):text);u.lang=lang==="en"?"en-GB":"fr-FR";u.rate=.97;u.pitch=1.05;
@@ -1563,7 +1577,7 @@ REC.onresult=function(e){var t="";for(var i=e.resultIndex;i<e.results.length;i++
 REC.onerror=function(e){if(e.error==="not-allowed"||e.error==="service-not-allowed")say("Autorise le micro pour parler à Désirée.");else if(e.error!=="aborted"&&e.error!=="no-speech")say("Le micro n’a pas fonctionné. Tu peux écrire ta question.");desState("error");setTimeout(function(){if(DA.c&&DA.c.state==="error")desState("idle")},2200)};
 REC.onend=function(){b.classList.remove("on");b.setAttribute("aria-pressed","false");REC=null;var t=(fin||$("cpI").value).trim();if(t&&!sent){sent=true;$("cpI").value="";cpAsk(t,null,true)}else if(DA.c&&DA.c.state==="listen")desState("idle")};
 try{REC.start()}catch(e){REC=null;b.classList.remove("on")}}
-function openCp(){CPS={mode:HM.mode,msgs:[]};renderCp();openOv("cp");$("cpTy").hidden=true;$("cpSc").scrollTop=0}
+function openCp(){CPS={mode:HM.mode,msgs:[]};renderCp();openOv("cp");$("cpTy").hidden=true;$("cpSc").scrollTop=0;if(P.aiOk)lfReady().then(function(lf){if(lf&&lf.warm)lf.warm()})}
 
 /* Messagerie : suivre la zone visible quand le clavier s'ouvre */
 (function(){var vv=window.visualViewport,cp=$("cp"),H0=window.innerHeight;
@@ -1932,6 +1946,7 @@ AC.getToken(ACI,false).then(r=>{window.ACst=r&&r.error?"erreur jeton : "+(r.erro
 const auth=A.getAuth(app);
 let db;try{db=F.initializeFirestore(app,{localCache:F.persistentLocalCache()})}catch(e){db=F.getFirestore(app)}
 const ref=uid=>F.doc(db,"users",uid);
+let AIP=null;const getAI=()=>AIP||(AIP=import(B+"firebase-ai.js").then(X=>({X,ai:X.getAI(app,{backend:new X.GoogleAIBackend()}),TL:(X.ThinkingLevel&&X.ThinkingLevel.LOW)||"LOW"})).catch(e=>{AIP=null;throw e}));
 window.LF={
 user:()=>auth.currentUser,
 onUser:cb=>A.onAuthStateChanged(auth,cb),
@@ -1944,8 +1959,15 @@ out:()=>A.signOut(auth),
 pull:async uid=>{let s;try{s=await F.getDocFromServer(ref(uid))}catch(e){if(e&&e.code==="permission-denied")throw e;s=await F.getDoc(ref(uid))}return s.exists()?s.data():null},
 push:(uid,data,c)=>F.setDoc(ref(uid),{data,c,v:1,t:F.serverTimestamp()}),
 del:async uid=>{const u=auth.currentUser;await F.deleteDoc(ref(uid));await A.deleteUser(u)},
-ask:async (sys,prompt)=>{const X=await import(B+"firebase-ai.js");const ai=X.getAI(app,{backend:new X.GoogleAIBackend()});let last;
-for(const name of ["gemini-3.8-flash","gemini-flash-latest","gemini-2.5-flash"]){try{const m=X.getGenerativeModel(ai,{model:name,systemInstruction:sys,generationConfig:{maxOutputTokens:2048,temperature:.55}});const r=await m.generateContent(prompt);const t=r.response.text();if(t&&t.trim())return t.trim();last=new Error("empty")}catch(e){last=e;const msg=String(e&&e.message||e);if(!/not.?found|404|unsupported|is not supported/i.test(msg))break}}throw last}
+warm:()=>getAI().catch(()=>{}),
+ask:async (sys,prompt,onChunk)=>{const G=await getAI();const X=G.X;let last;
+for(const name of ["gemini-3.8-flash","gemini-flash-latest","gemini-2.5-flash"]){for(const think of [true,false]){
+const cfg={maxOutputTokens:2048,temperature:.55};if(think){if(name.indexOf("gemini-2.5")===0)cfg.thinkingConfig={thinkingBudget:0};else cfg.thinkingConfig={thinkingLevel:G.TL}}
+try{const m=X.getGenerativeModel(G.ai,{model:name,systemInstruction:sys,generationConfig:cfg});let t="";
+if(onChunk&&m.generateContentStream){const r=await m.generateContentStream(prompt);for await(const ch of r.stream){let x="";try{x=ch.text()}catch(e){}if(x){t+=x;onChunk(t)}}}
+else{const r=await m.generateContent(prompt);t=r.response.text()}
+if(t&&t.trim())return t.trim();last=new Error("empty");break}
+catch(e){last=e;const msg=String(e&&e.message||e);if(think&&/thinking/i.test(msg))continue;if(/not.?found|404|unsupported|is not supported/i.test(msg))break;throw e}}}throw last}
 };
 }catch(e){window.LF=null;window.LFerr=String(e&&e.message||e);console.warn("Firebase indisponible",e)}
 window.dispatchEvent(new Event("lf-ready"));
