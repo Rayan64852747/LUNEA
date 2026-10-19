@@ -1,5 +1,5 @@
 /* Lunéa : fonctionnement hors connexion */
-const CACHE = "lunea-v17b";
+const CACHE = "lunea-v18";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-180.png"];
 
 self.addEventListener("install", (e) => {
@@ -26,6 +26,15 @@ self.addEventListener("fetch", (e) => {
           const net = fetch(req).then((res) => { if (res.ok || res.type === "opaque") c.put(req, res.clone()); return res; }).catch(() => hit);
           return hit || net;
         })
+      )
+    );
+    return;
+  }
+  // Bibliothèques Firebase : gardées en cache pour démarrer sans internet
+  if (url.host === "www.gstatic.com" && url.pathname.startsWith("/firebasejs/")) {
+    e.respondWith(
+      caches.open(CACHE).then((c) =>
+        c.match(req).then((hit) => hit || fetch(req).then((res) => { if (res.ok) c.put(req, res.clone()); return res; }))
       )
     );
     return;
