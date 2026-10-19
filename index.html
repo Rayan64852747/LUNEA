@@ -1539,20 +1539,20 @@ function aiCachePut(t,a){if(!aiOkLen(t))return;var c=aiCache(),k;c[aiKey(t)]={t:
 function aiCount(){var k="lunea-ai-"+iso(today);try{return+(localStorage.getItem(k)||0)}catch(e){return 0}}
 function aiInc(){var k="lunea-ai-"+iso(today);try{_set.call(localStorage,k,String(aiCount()+1))}catch(e){}}
 function aiClean(t){return String(t).replace(/\*\*|__|^#+\s*/gm,"").replace(/^\s*[-*]\s+/gm,"• ")}
-function aiAsk(text,onChunk){var A=anon(text),hist=CPS.msgs.slice(-5,-1).map(function(m){return(m[1]?"Utilisatrice : ":"Désirée : ")+anon(m[0]).t}).join("\n");
+function aiAsk(text,onChunk,SB){var A=anon(text),hist=CPS.msgs.slice(-5,-1).map(function(m){return(m[1]?"Utilisatrice : ":"Désirée : ")+anon(m[0]).t}).join("\n");
 var prompt=(aiCtx()?aiCtx()+"\n":"")+(lang==="en"?"Réponds en anglais.\n":"")+(hist?"Échanges précédents :\n"+hist+"\n":"")+"Question : "+A.t;
-return lfReady().then(function(lf){if(!lf||!lf.ask)throw new Error("Firebase non chargé : "+(window.LFerr||"?"));return Promise.race([lf.ask(AISYS,prompt,onChunk),new Promise(function(r,j){setTimeout(function(){j(new Error("timeout (60 s)"))},60000)})])}).then(function(t){aiInc();aiCachePut(text,t.replace(/\*\*|__|^#+\s*/gm,"").replace(/^\s*[-*]\s+/gm,"• "));return{t:t.replace(/\*\*|__|^#+\s*/gm,"").replace(/^\s*[-*]\s+/gm,"• "),ai:1,masked:A.masked}})}
+return lfReady().then(function(lf){if(!lf||!lf.ask)throw new Error("Firebase non chargé : "+(window.LFerr||"?"));return Promise.race([lf.ask(AISYS,prompt,onChunk),new Promise(function(r,j){setTimeout(function(){if(!SB||!SB.on){if(SB)SB.dead=true;j(new Error("timeout (30 s sans réponse)"))}},30000);setTimeout(function(){j(new Error("timeout (60 s)"))},60000)})])}).then(function(t){aiInc();aiCachePut(text,t.replace(/\*\*|__|^#+\s*/gm,"").replace(/^\s*[-*]\s+/gm,"• "));return{t:t.replace(/\*\*|__|^#+\s*/gm,"").replace(/^\s*[-*]\s+/gm,"• "),ai:1,masked:A.masked}})}
 function aiConsent(){return new Promise(function(res){if(P.aiOk===true){res(true);return}if(P.aiOk===false){res(false);return}
 var el=document.createElement("div");el.className="cpr cpAsk";el.innerHTML='<img class="cph" alt="" src="'+pers().head+'"><div class="cpb"><span>Pour répondre à tes questions libres, j’utilise l’IA Gemini de Google. Ta question est envoyée sans ton nom, ton e-mail ni ton journal, et les noms, numéros et lieux sont masqués automatiquement. Google peut utiliser les questions pour améliorer ses services. Évite quand même d’écrire des noms ou ton adresse.</span><div class="xrow" style="margin-top:10px"><button type="button" class="xghost" data-ai="0">Non merci</button><button type="button" class="xsave sm" data-ai="1">J’accepte</button></div></div>';
 $("cpL").appendChild(el);var sc=$("cpSc");setTimeout(function(){try{sc.scrollTo({top:sc.scrollHeight,behavior:"smooth"})}catch(e){sc.scrollTop=sc.scrollHeight}},50);el.addEventListener("click",function(e){var b=e.target.closest("[data-ai]");if(!b)return;P.aiOk=b.dataset.ai==="1";save();el.remove();res(P.aiOk)})})}
 function cpAsk(text,qid,voice){if(CPB.busy)return;CPB.busy=true;try{speechSynthesis.cancel()}catch(e){}
 CPS.msgs.push([text,true]);var SB=cpStreamer(CPS.msgs.length-1,text);renderCp();cpScroll();desState("think");
 var t0=Date.now();window.cpT0=t0;(qid?BRAIN.reply(text,qid):aiConsent().then(function(ok){desState("think");var hit=ok?aiCacheGet(text):null;if(hit)return{t:hit+"\n\n"+(lang==="en"?"(Answer already given, saved on your phone.)":"(Réponse déjà donnée, gardée sur ton téléphone.)"),ai:1,masked:anon(text).masked};
-if(!ok||aiCount()>=20)return BRAIN.reply(text,null).then(function(r){if(ok)r.t+="\n\n(Limite de questions libres atteinte pour aujourd’hui : réponse préparée.)";return r});return aiAsk(text,SB.onChunk).catch(function(er){if(SB.on){SB.done(SB.tg+"\n\n"+(lang==="en"?"(Answer interrupted.)":"(Réponse interrompue.)"));return{streamed:1}}var dt=("v33 · "+Math.round((Date.now()-(window.cpT0||Date.now()))/1000)+" s · App Check : "+(window.ACst||"?")+" · "+String(er&&(er.code||"")+" "+(er.message||er))).replace(/\s+/g," ").trim().slice(0,700);try{console.warn("IA",er)}catch(x){}return BRAIN.reply(text,null).then(function(r){r.t+="\n\n(L’IA n’est pas disponible pour le moment : réponse préparée.)";r.err=dt;return r})})})).then(function(r){if(r.streamed||(r.ai&&SB.on)){if(!r.streamed)SB.done(r.t);CPB.busy=false;desState("done");return}if(r.masked&&r.masked.length)CPS.msgs[CPS.msgs.length-1][2]=r.masked;setTimeout(function(){CPS.msgs.push([r.t,false,null,r.ai?1:0,r.err||""]);renderCp();cpScroll();cpType(r.ai);CPB.busy=false;
+if(!ok||aiCount()>=20)return BRAIN.reply(text,null).then(function(r){if(ok)r.t+="\n\n(Limite de questions libres atteinte pour aujourd’hui : réponse préparée.)";return r});return aiAsk(text,SB.onChunk,SB).catch(function(er){if(SB.on&&!SB.dead){SB.dead=true;SB.done(SB.tg+"\n\n"+(lang==="en"?"(Answer interrupted.)":"(Réponse interrompue.)"));return{streamed:1}}var dt=("v34 · "+Math.round((Date.now()-(window.cpT0||Date.now()))/1000)+" s · App Check : "+(window.ACst||"?")+" · "+String(er&&(er.code||"")+" "+(er.message||er))).replace(/\s+/g," ").trim().slice(0,700);try{console.warn("IA",er)}catch(x){}return BRAIN.reply(text,null).then(function(r){r.t+="\n\n(L’IA n’est pas disponible pour le moment : réponse préparée.)";r.err=dt;return r})})})).then(function(r){if(r.streamed||(r.ai&&SB.on)){if(!r.streamed)SB.done(r.t);CPB.busy=false;desState("done");return}if(r.masked&&r.masked.length)CPS.msgs[CPS.msgs.length-1][2]=r.masked;setTimeout(function(){CPS.msgs.push([r.t,false,null,r.ai?1:0,r.err||""]);renderCp();cpScroll();cpType(r.ai);CPB.busy=false;
 desState("done")},Math.max(0,650-(Date.now()-t0)))},function(){CPB.busy=false;desState("error")})}
 var TYP={iv:null};
 function cpStreamer(uidx,text){var o={on:false,el:null,tg:"",sh:0,iv:null,idx:-1,fin:false},rm=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
-o.onChunk=function(t){o.tg=aiClean(t);if(o.on)return;o.on=true;var T=$("cpTy");if(T)T.hidden=true;var mk=anon(text).masked;if(mk.length&&CPS.msgs[uidx])CPS.msgs[uidx][2]=mk;
+o.onChunk=function(t){if(o.dead)return;o.tg=aiClean(t);if(o.on)return;o.on=true;var T=$("cpTy");if(T)T.hidden=true;var mk=anon(text).masked;if(mk.length&&CPS.msgs[uidx])CPS.msgs[uidx][2]=mk;
 CPS.msgs.push(["",false,null,1,""]);o.idx=CPS.msgs.length-1;renderCp();var L=document.querySelectorAll("#cpL .cpr .cpb");o.el=L[L.length-1];o.el.setAttribute("translate","no");o.el.classList.add("typing");cpScroll();clearInterval(TYP.iv);
 o.iv=setInterval(function(){if(!o.el||!o.el.isConnected){clearInterval(o.iv);return}if(o.sh<o.tg.length){o.sh=rm?o.tg.length:Math.min(o.tg.length,o.sh+3);o.el.textContent=o.tg.slice(0,o.sh);if(o.sh%45<3)cpScroll(true)}else if(o.fin){clearInterval(o.iv);o.el.classList.remove("typing");cpScroll(true)}},20)};
 o.done=function(t){if(t!=null)o.tg=aiClean(t);o.fin=true;if(CPS.msgs[o.idx])CPS.msgs[o.idx][0]=o.tg};return o}
@@ -1946,7 +1946,7 @@ AC.getToken(ACI,false).then(r=>{window.ACst=r&&r.error?"erreur jeton : "+(r.erro
 const auth=A.getAuth(app);
 let db;try{db=F.initializeFirestore(app,{localCache:F.persistentLocalCache()})}catch(e){db=F.getFirestore(app)}
 const ref=uid=>F.doc(db,"users",uid);
-let AIP=null;const getAI=()=>AIP||(AIP=import(B+"firebase-ai.js").then(X=>({X,ai:X.getAI(app,{backend:new X.GoogleAIBackend()}),TL:(X.ThinkingLevel&&X.ThinkingLevel.LOW)||"LOW"})).catch(e=>{AIP=null;throw e}));
+let AIP=null;const getAI=()=>AIP||(AIP=import(B+"firebase-ai.js").then(X=>({X,ai:X.getAI(app,{backend:new X.GoogleAIBackend()}),TL:(X.ThinkingLevel&&X.ThinkingLevel.LOW)||"LOW",TM:(X.ThinkingLevel&&X.ThinkingLevel.MINIMAL)||"MINIMAL"})).catch(e=>{AIP=null;throw e}));
 window.LF={
 user:()=>auth.currentUser,
 onUser:cb=>A.onAuthStateChanged(auth,cb),
@@ -1961,15 +1961,14 @@ push:(uid,data,c)=>F.setDoc(ref(uid),{data,c,v:1,t:F.serverTimestamp()}),
 del:async uid=>{const u=auth.currentUser;await F.deleteDoc(ref(uid));await A.deleteUser(u)},
 warm:()=>getAI().catch(()=>{}),
 ask:async (sys,prompt,onChunk)=>{const G=await getAI();const X=G.X;let last,errs=[];
-for(const name of ["gemini-3.8-flash","gemini-flash-latest","gemini-2.5-flash"]){let nf=false;
+for(const name of ["gemini-3.5-flash-lite","gemini-3.8-flash","gemini-flash-latest","gemini-2.5-flash"]){let nf=false;
 for(const at of [{th:1,st:1},{th:0,st:1},{th:0,st:0}]){
-const cfg={maxOutputTokens:2048,temperature:.55};if(at.th){if(name.indexOf("gemini-2.5")===0)cfg.thinkingConfig={thinkingBudget:0};else cfg.thinkingConfig={thinkingLevel:G.TL}}
+const cfg={maxOutputTokens:2048,temperature:.55};if(at.th){if(name.indexOf("gemini-2.5")===0)cfg.thinkingConfig={thinkingBudget:0};else cfg.thinkingConfig={thinkingLevel:/lite/.test(name)?G.TM:G.TL}}
 let got="";try{const m=X.getGenerativeModel(G.ai,{model:name,systemInstruction:sys,generationConfig:cfg});
 if(at.st&&onChunk&&m.generateContentStream){const r=await m.generateContentStream(prompt);for await(const ch of r.stream){let x="";try{x=ch.text()}catch(e){}if(x){got+=x;onChunk(got)}}}
 else{const r=await m.generateContent(prompt);got=r.response.text()}
 if(got&&got.trim())return got.trim();last=new Error("réponse vide")}
-catch(e){last=e;const msg=String(e&&e.message||e);errs.push(name+(at.th?"+think":"")+(at.st?"+stream":"")+": "+msg.slice(0,90));if(got)throw e;if(/not.?found|404/i.test(msg)){nf=true;break}}}
-if(!nf)break}
+catch(e){last=e;const msg=String(e&&e.message||e);errs.push(name+(at.th?"+think":"")+(at.st?"+stream":"")+": "+msg.slice(0,90));if(got)throw e;if(/not.?found|404/i.test(msg)){nf=true;break}}}}
 if(last)last.message=(last.message||"")+" || "+errs.join(" | ");throw last}
 };
 }catch(e){window.LF=null;window.LFerr=String(e&&e.message||e);console.warn("Firebase indisponible",e)}

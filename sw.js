@@ -1,5 +1,5 @@
 /* Lunéa : fonctionnement hors connexion */
-const CACHE = "lunea-v36";
+const CACHE = "lunea-v37";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-180.png"];
 
 self.addEventListener("install", (e) => {
