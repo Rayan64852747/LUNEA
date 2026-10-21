@@ -82,11 +82,12 @@ body{overflow-x:clip}
 .row>div{flex:1 1 200px}
 .main h2{font:600 clamp(26px,8vw,32px)/1.1 "Cormorant Garamond",Georgia,serif;margin:0 0 20px}
 h3{margin:26px 0 10px;font-size:11.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+select{font:16px Inter,system-ui,sans-serif;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#09090c;color:var(--ink)}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:10px}
 .row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(140px,100%),1fr));gap:10px;margin-bottom:10px}
 .grid .card{margin:0}
-.stat b{display:block;font:600 34px/1.1 "Cormorant Garamond",Georgia,serif;color:var(--pink2)}
+.stat b{display:block;font:600 30px/1.1 Inter,system-ui,sans-serif;font-variant-numeric:lining-nums tabular-nums;color:var(--pink2)}
 .stat span{font-size:12.5px;color:var(--muted)}
 .tag{display:inline-block;padding:2px 10px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font-size:12px;font-weight:600}
 .tag.bad{background:#3a1519;border-color:#5a2227;color:var(--err)}
@@ -102,7 +103,7 @@ h3{margin:26px 0 10px;font-size:11.5px;font-weight:600;letter-spacing:.14em;text
 #toast.on{opacity:1}
 @media (max-width:820px){
  .shell{grid-template-columns:minmax(0,1fr)}
- .side{position:sticky;top:0;height:auto;flex-direction:row;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;border-right:0;border-bottom:1px solid var(--line);z-index:20;background:rgba(13,13,17,.92);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+ .side{position:sticky;top:0;height:auto;flex-direction:row;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;border-right:0;border-bottom:1px solid var(--line);z-index:20;background:#0d0d11}
  .brand{flex:1}.brand svg{width:30px}.brand b{font-size:22px}
  .me{margin:0;flex-direction:row}.me small{display:none}
  .me button{min-height:40px;padding:0 14px;border-radius:20px}
@@ -243,6 +244,7 @@ async function rHome(){
   const now=Date.now(),sd=new Date();sd.setHours(0,0,0,0);const t0d=sd.getTime(),t0m=new Date(sd.getFullYear(),sd.getMonth(),1).getTime();
   const cr=d.map(x=>ms(x.c)).filter(Boolean),nC=a=>cr.filter(c=>c>=a).length,act=n=>d.filter(x=>ms(x.t)>=now-n*DAY).length;
   const ret=n=>{const co=d.filter(x=>ms(x.c)&&ms(x.c)<=now-n*DAY&&ms(x.t));return co.length?Math.round(co.filter(x=>ms(x.t)>=ms(x.c)+n*DAY).length/co.length*100)+" %":"–"};
+  const cnt=f=>{const o={};d.forEach(x=>{const k=f(x);if(k)o[k]=(o[k]||0)+1});return Object.entries(o).sort((a,b)=>b[1]-a[1]).slice(0,8)};
   const g1=el("div","grid c3"),g2=el("div","grid c3"),g3=el("div","grid");
   stat(g1,"Inscrites au total",tot);stat(g1,"Aujourd’hui",nC(t0d));stat(g1,"Ce mois",nC(t0m));
   stat(g2,"Actives 24 h",act(1));stat(g2,"Actives 7 jours",act(7));stat(g2,"Actives 30 jours",act(30));
@@ -251,7 +253,7 @@ async function rHome(){
   const mx=Math.max(1,...days.map(x=>x[1])),ch=el("div","card");ch.style.cssText="display:flex;align-items:flex-end;gap:3px;height:110px";
   days.forEach(([a,v])=>{const b=el("i");b.title=new Date(a).toLocaleDateString("fr-FR")+" : "+v;b.style.cssText="flex:1;border-radius:3px 3px 0 0;background:var(--pink);height:"+Math.max(3,v/mx*100)+"%;opacity:"+(v?1:.25);ch.append(b)});
   const al=el("div","card");al.append(el("b","",rp>0?"⚠ "+rp+" signalement"+(rp>1?"s":"")+" à traiter":"Aucun signalement à traiter"));if(rp>0){al.append(el("br"),btn("Voir les signalements","pri",()=>go("rep")))}
-  V.replaceChildren(al,g1,g2,el("h3","","Rétention (approximative)"),g3,el("h3","","Inscriptions sur 30 jours"),ch,
+  V.replaceChildren(al,g1,g2,el("h3","","Rétention (approximative)"),g3,el("h3","","Inscriptions sur 30 jours"),ch,el("h3","","Pays"),bars(cnt(x=>cname(x.ct))),el("h3","","Zones"),bars(cnt(x=>x.zn)),el("h3","","Tranches d’âge"),bars(cnt(x=>x.ag)),
     el("p","muted","Calculé sur les 2 000 comptes les plus récemment actifs. La rétention compare la dernière activité à la date d’inscription. Aucune donnée de santé n’est lue."))}
 
 const bars=rows=>{const c=el("div","card"),mx=Math.max(1,...rows.map(r=>r[1]));
@@ -275,16 +277,18 @@ async function rAcc(){
   const q=el("input");q.type="search";q.placeholder="Surnom ou identifiant";q.style.marginBottom="10px";
   let flt="all";const bar=el("div","acts"),lst=el("div"),info=el("p","muted");
   const draw=()=>{const k=q.value.trim().toLowerCase(),now=Date.now();
-    const r=d.filter(x=>(flt!=="in7"||ms(x.t)<now-7*DAY)&&(flt!=="ps"||ps[x.id])&&(!k||x.id.toLowerCase().includes(k)||(ps[x.id]||"").toLowerCase().includes(k)));
+    const r=d.filter(x=>(flt!=="in7"||ms(x.t)<now-7*DAY)&&(flt!=="ps"||ps[x.id])&&(!sc.value||(x.ct||"")===sc.value)&&(!sz.value||(x.zn||"")===sz.value)&&(!sa.value||(x.ag||"")===sa.value)&&(!k||x.id.toLowerCase().includes(k)||(ps[x.id]||"").toLowerCase().includes(k)));
     [...bar.children].forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.k===flt)));
     info.textContent=r.length+" résultat"+(r.length>1?"s":"")+" sur "+total+" comptes"+(r.length>100?" (100 premiers affichés)":"");
     lst.replaceChildren(...r.slice(0,100).map(x=>{const c=el("div","card"),w=el("div","row"),l=el("div");
       l.append(el("b","",(ps[x.id]||"Sans surnom")+" · "+(MODE[x.m]||"–")+" · "+cname(x.ct)),el("br"),
-        el("span","muted","Inscrite : "+(when(x.c)||"avant le suivi")+" · Dernière activité : "+(when(x.t)||"–")),el("br"),el("code","",x.id));
+        el("span","muted",(x.zn?x.zn+" · ":"")+(x.ag?x.ag+" ans · ":"")+"Inscrite : "+(when(x.c)||"avant le suivi")+" · Dernière activité : "+(when(x.t)||"–")),el("br"),el("code","",x.id));
       w.append(l,btn("Copier l’ID","",async()=>{try{await navigator.clipboard.writeText(x.id);toast("Identifiant copié")}catch(e){toast("Copie impossible")}}));c.append(w);return c}))};
+  const sel=(lab,vals,fmt)=>{const s=el("select");s.append(new Option(lab,""));[...new Set(vals.filter(Boolean))].sort().forEach(v=>s.append(new Option(fmt?fmt(v):v,v)));s.style.cssText="flex:1 1 30%;min-width:0";s.onchange=draw;return s};
+  const sc=sel("Tous pays",d.map(x=>x.ct),cname),sz=sel("Toutes zones",d.map(x=>x.zn)),sa=sel("Tous âges",d.map(x=>x.ag),v=>v+" ans"),fr=el("div","acts");fr.style.marginBottom="10px";fr.append(sc,sz,sa);
   [["all","Toutes"],["in7","Inactives 7 j"],["ps","Avec surnom"]].forEach(([k,t])=>{const b=btn(t,"",()=>{flt=k;draw()});b.dataset.k=k;bar.append(b)});
   q.addEventListener("input",draw);
-  V.replaceChildren(q,bar,info,lst,el("p","muted","L’âge n’est pas collecté par l’application. Les e-mails se consultent dans Firebase, Authentication."));draw()}
+  V.replaceChildren(q,bar,fr,info,lst,el("p","muted","La zone et la tranche d’âge apparaissent après la mise à jour de l’application. Les e-mails se consultent dans Firebase, Authentication."));draw()}
 
 async function rSys(){
   const mref=F.doc(db,"config","maintenance");
