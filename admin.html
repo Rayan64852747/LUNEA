@@ -153,6 +153,7 @@ h3{margin:26px 0 10px;font-size:11.5px;font-weight:600;letter-spacing:.14em;text
     <div class="brand"><svg viewBox="0 0 120 110" aria-hidden="true"><use href="#pt"/><use href="#pl"/><use href="#pr"/></svg><div><b>Lunéa</b><small>Administration</small></div></div>
     <nav id="tabs">
       <button data-v="home" aria-pressed="true">Vue d’ensemble</button>
+      <button data-v="acc" aria-pressed="false">Comptes</button>
       <button data-v="rep" aria-pressed="false">Signalements</button>
       <button data-v="com" aria-pressed="false">Communauté</button>
       <button data-v="mem" aria-pressed="false">Membres</button>
@@ -176,7 +177,7 @@ const t0=Date.now();
 const hideBoot=()=>setTimeout(()=>$("boot").classList.add("out"),Math.max(0,1900-(Date.now()-t0)));
 setTimeout(()=>{if(!$("boot").classList.contains("out"))$("bootmsg").textContent="Connexion lente… vérifie ta connexion internet."},10000);
 const show=id=>{["login","denied","app"].forEach(x=>$(x).hidden=x!==id);hideBoot()};
-const TT={home:"Vue d’ensemble",rep:"Signalements",com:"Communauté",mem:"Membres",an:"Annonce"};
+const TT={home:"Vue d’ensemble",acc:"Comptes",rep:"Signalements",com:"Communauté",mem:"Membres",an:"Annonce"};
 const toast=t=>{const e=$("toast");e.textContent=t;e.classList.add("on");setTimeout(()=>e.classList.remove("on"),2200)};
 const el=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e};
 const btn=(txt,cls,fn)=>{const b=el("button",cls,txt);b.type="button";b.onclick=fn;return b};
@@ -205,7 +206,7 @@ A.onAuthStateChanged(auth,async u=>{
 $("tabs").addEventListener("click",e=>{const b=e.target.closest("button");if(b)go(b.dataset.v)});
 function go(v){view=v;$("ttl").textContent=TT[v];[...$("tabs").children].forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===v)));
   V.replaceChildren(el("p","muted","Chargement…"));
-  ({home:rHome,rep:rRep,com:rCom,mem:rMem,an:rAn})[v]().catch(err=>{V.replaceChildren(el("p","muted","Erreur : "+(err.code||err.message)))})}
+  ({home:rHome,acc:rAcc,rep:rRep,com:rCom,mem:rMem,an:rAn})[v]().catch(err=>{V.replaceChildren(el("p","muted","Erreur : "+(err.code||err.message)))})}
 
 const sq=(...w)=>F.getCountFromServer(F.query(F.collection(db,"stats"),...w)).then(r=>r.data().count,()=>null);
 const since=days=>sq(F.where("t",">=",F.Timestamp.fromDate(new Date(Date.now()-days*864e5))));
@@ -236,6 +237,28 @@ async function growth(){
   const cc={};docs.forEach(x=>{const k=x.ct||"";cc[k]=(cc[k]||0)+1});
   const top=Object.entries(cc).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([k,v])=>[cname(k),v]);
   return{weeks:bars(wk),countries:bars(top)}}
+
+const MODE={cycle:"Cycle",preg:"Grossesse",pp:"Post-partum"};
+async function rAcc(){
+  const total=await count("stats");
+  const head=el("div","card"),lst=el("div"),more=el("div","acts");
+  head.append(el("b","","Comptes connus : "+total),el("p","muted","Un compte apparaît ici dès qu’il a ouvert l’application connecté. Pour voir les adresses e-mail, ouvre Firebase, Authentication, Utilisateurs, et cherche l’identifiant copié ici."));
+  V.replaceChildren(head,lst,more);
+  let last=null,n=0;
+  const load=async()=>{
+    const q=F.query(F.collection(db,"stats"),F.orderBy("t","desc"),...(last?[F.startAfter(last)]:[]),F.limit(50));
+    const docs=(await F.getDocs(q)).docs;
+    docs.forEach(d=>{const x=d.data(),c=el("div","card"),r=el("div","row"),l=el("div");n++;
+      l.append(el("b","",n+". "+(MODE[x.m]||"–")+" · "+cname(x.ct)),el("br"),
+        el("span","muted","Inscrite : "+(when(x.c)||"avant le suivi")+" · Dernière activité : "+(when(x.t)||"–")),el("br"),
+        el("code","",d.id));
+      r.append(l,btn("Copier l’identifiant","",async()=>{try{await navigator.clipboard.writeText(d.id);toast("Identifiant copié")}catch(e){toast("Copie impossible")}}));
+      c.append(r);lst.append(c)});
+    last=docs[docs.length-1]||last;
+    more.replaceChildren();
+    if(docs.length===50)more.append(btn("Voir les suivantes","",()=>load().catch(err=>toast("Erreur : "+(err.code||err.message)))));
+    if(!n)lst.append(el("p","muted","Aucun compte pour l’instant."))};
+  await load()}
 async function rAn(){
   const ref=F.doc(db,"config","announcement"),cur=await F.getDoc(ref),x=cur.exists()?cur.data():{};
   const ta=el("textarea");ta.value=x.on?(x.x||""):"";ta.placeholder="Ex. : Une nouvelle fonction est arrivée dans LUNÉA !";ta.maxLength=300;
