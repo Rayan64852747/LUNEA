@@ -153,11 +153,12 @@ h3{margin:26px 0 10px;font-size:11.5px;font-weight:600;letter-spacing:.14em;text
     <div class="brand"><svg viewBox="0 0 120 110" aria-hidden="true"><use href="#pt"/><use href="#pl"/><use href="#pr"/></svg><div><b>Lunéa</b><small>Administration</small></div></div>
     <nav id="tabs">
       <button data-v="home" aria-pressed="true">Vue d’ensemble</button>
-      <button data-v="acc" aria-pressed="false">Comptes</button>
+      <button data-v="acc" aria-pressed="false">Filles</button>
       <button data-v="rep" aria-pressed="false">Signalements</button>
       <button data-v="com" aria-pressed="false">Communauté</button>
       <button data-v="mem" aria-pressed="false">Membres</button>
       <button data-v="an" aria-pressed="false">Annonce</button>
+      <button data-v="sys" aria-pressed="false">Système</button>
     </nav>
     <div class="me"><small id="who"></small><button id="out2">Déconnexion</button></div>
   </aside>
@@ -177,7 +178,7 @@ const t0=Date.now();
 const hideBoot=()=>setTimeout(()=>$("boot").classList.add("out"),Math.max(0,1900-(Date.now()-t0)));
 setTimeout(()=>{if(!$("boot").classList.contains("out"))$("bootmsg").textContent="Connexion lente… vérifie ta connexion internet."},10000);
 const show=id=>{["login","denied","app"].forEach(x=>$(x).hidden=x!==id);hideBoot()};
-const TT={home:"Vue d’ensemble",acc:"Comptes",rep:"Signalements",com:"Communauté",mem:"Membres",an:"Annonce"};
+const TT={home:"Vue d’ensemble",acc:"Filles",sys:"Système",rep:"Signalements",com:"Communauté",mem:"Membres",an:"Annonce"};
 const toast=t=>{const e=$("toast");e.textContent=t;e.classList.add("on");setTimeout(()=>e.classList.remove("on"),2200)};
 const el=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e};
 const btn=(txt,cls,fn)=>{const b=el("button",cls,txt);b.type="button";b.onclick=fn;return b};
@@ -186,6 +187,10 @@ const WHY={closed:"Fermé",phone:"Numéro faux",place:"Mauvais endroit",other:"A
 const list=async(path,field,n)=>(await F.getDocs(F.query(F.collection(db,...path.split("/")),F.orderBy(field,"desc"),F.limit(n)))).docs;
 const count=async p=>{try{return (await F.getCountFromServer(F.collection(db,p))).data().count}catch(e){return "–"}};
 const V=$("view");
+const lg=t=>{try{const u=auth.currentUser;F.addDoc(F.collection(db,"logs"),{u:String(u&&(u.email||u.uid)||"?").slice(0,80),x:String(t).slice(0,180),t:F.serverTimestamp()}).catch(()=>{})}catch(e){}};
+const DAY=864e5,ms=v=>v&&v.toMillis?v.toMillis():null;
+let SC=null;
+const allStats=async()=>{if(SC&&Date.now()-SC.at<6e4)return SC.d;const d=(await F.getDocs(F.query(F.collection(db,"stats"),F.orderBy("t","desc"),F.limit(2000)))).docs.map(x=>({id:x.id,...x.data()}));SC={at:Date.now(),d};return d};
 let view="home";
 
 $("pwt").onclick=()=>{const p=$("pw"),h=p.type==="password";p.type=h?"text":"password";$("pwt").textContent=h?"Masquer":"Afficher"};
@@ -206,23 +211,26 @@ A.onAuthStateChanged(auth,async u=>{
 $("tabs").addEventListener("click",e=>{const b=e.target.closest("button");if(b)go(b.dataset.v)});
 function go(v){view=v;$("ttl").textContent=TT[v];[...$("tabs").children].forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===v)));
   V.replaceChildren(el("p","muted","Chargement…"));
-  ({home:rHome,acc:rAcc,rep:rRep,com:rCom,mem:rMem,an:rAn})[v]().catch(err=>{V.replaceChildren(el("p","muted","Erreur : "+(err.code||err.message)))})}
+  ({home:rHome,acc:rAcc,sys:rSys,rep:rRep,com:rCom,mem:rMem,an:rAn})[v]().catch(err=>{V.replaceChildren(el("p","muted","Erreur : "+(err.code||err.message)))})}
 
 const sq=(...w)=>F.getCountFromServer(F.query(F.collection(db,"stats"),...w)).then(r=>r.data().count,()=>null);
 const since=days=>sq(F.where("t",">=",F.Timestamp.fromDate(new Date(Date.now()-days*864e5))));
 const stat=(g,l,v)=>{const c=el("div","card stat");c.append(el("b","",v==null?"–":v),el("span","muted",l));g.append(c)};
 async function rHome(){
-  const [g,r,m,u,a1,a7,a30,cy,pr,pp,n7]=await Promise.all([count("groups"),count("reports"),count("pub"),count("stats"),since(1),since(7),since(30),
-    sq(F.where("m","==","cycle")),sq(F.where("m","==","preg")),sq(F.where("m","==","pp")),sq(F.where("c",">=",F.Timestamp.fromDate(new Date(Date.now()-7*864e5))))]);
-  const g1=el("div","grid"),g2=el("div","grid"),g3=el("div","grid"),g4=el("div","grid");
-  stat(g1,"Personnes inscrites",u);stat(g1,"Nouvelles sur 7 jours",n7);
-  stat(g2,"Actives aujourd’hui",a1);stat(g2,"Actives sur 7 jours",a7);stat(g2,"Actives sur 30 jours",a30);
-  stat(g2,"Inactives depuis plus de 30 jours",(typeof u==="number"&&a30!=null)?u-a30:null);
-  stat(g3,"Suivi du cycle",cy);stat(g3,"Grossesse",pr);stat(g3,"Post-partum",pp);
-  stat(g4,"Groupes",g);stat(g4,"Signalements en attente",r);stat(g4,"Profils publics",m);
-  const extra=await growth();
-  V.replaceChildren(g1,g2,el("h3","","Selon le mode utilisé"),g3,el("h3","","Nouvelles inscriptions par semaine"),extra.weeks,el("h3","","Pays"),extra.countries,el("h3","","Communauté"),g4,
-    el("p","muted","Les chiffres viennent d’un petit document anonyme (mode, pays, dates) que l’application enregistre une fois par jour. Une personne apparaît dès qu’elle ouvre la nouvelle version de l’application. Active = a ouvert ou sauvegardé récemment. Aucune donnée de santé n’est lue."))}
+  const [d,rp,tot]=await Promise.all([allStats(),count("reports"),count("stats")]);
+  const now=Date.now(),sd=new Date();sd.setHours(0,0,0,0);const t0d=sd.getTime(),t0m=new Date(sd.getFullYear(),sd.getMonth(),1).getTime();
+  const cr=d.map(x=>ms(x.c)).filter(Boolean),nC=a=>cr.filter(c=>c>=a).length,act=n=>d.filter(x=>ms(x.t)>=now-n*DAY).length;
+  const ret=n=>{const co=d.filter(x=>ms(x.c)&&ms(x.c)<=now-n*DAY&&ms(x.t));return co.length?Math.round(co.filter(x=>ms(x.t)>=ms(x.c)+n*DAY).length/co.length*100)+" %":"–"};
+  const g1=el("div","grid"),g2=el("div","grid"),g3=el("div","grid");
+  stat(g1,"Inscrites au total",tot);stat(g1,"Aujourd’hui",nC(t0d));stat(g1,"Ce mois",nC(t0m));
+  stat(g2,"Actives 24 h",act(1));stat(g2,"Actives 7 jours",act(7));stat(g2,"Actives 30 jours",act(30));
+  stat(g3,"Rétention J7",ret(7));stat(g3,"Rétention J30",ret(30));
+  const days=[];for(let i=29;i>=0;i--){const a=t0d-i*DAY;days.push([a,cr.filter(c=>c>=a&&c<a+DAY).length])}
+  const mx=Math.max(1,...days.map(x=>x[1])),ch=el("div","card");ch.style.cssText="display:flex;align-items:flex-end;gap:3px;height:110px";
+  days.forEach(([a,v])=>{const b=el("i");b.title=new Date(a).toLocaleDateString("fr-FR")+" : "+v;b.style.cssText="flex:1;border-radius:3px 3px 0 0;background:var(--pink);height:"+Math.max(3,v/mx*100)+"%;opacity:"+(v?1:.25);ch.append(b)});
+  const al=el("div","card");al.append(el("b","",rp>0?"⚠ "+rp+" signalement"+(rp>1?"s":"")+" à traiter":"Aucun signalement à traiter"));if(rp>0){al.append(el("br"),btn("Voir les signalements","pri",()=>go("rep")))}
+  V.replaceChildren(al,g1,g2,el("h3","","Rétention (approximative)"),g3,el("h3","","Inscriptions sur 30 jours"),ch,
+    el("p","muted","Calculé sur les 2 000 comptes les plus récemment actifs. La rétention compare la dernière activité à la date d’inscription. Aucune donnée de santé n’est lue."))}
 
 const bars=rows=>{const c=el("div","card"),mx=Math.max(1,...rows.map(r=>r[1]));
   if(!rows.length)c.append(el("p","muted","Pas encore de données."));
@@ -240,33 +248,44 @@ async function growth(){
 
 const MODE={cycle:"Cycle",preg:"Grossesse",pp:"Post-partum"};
 async function rAcc(){
-  const total=await count("stats");
-  const head=el("div","card"),lst=el("div"),more=el("div","acts");
-  head.append(el("b","","Comptes connus : "+total),el("p","muted","Un compte apparaît ici dès qu’il a ouvert l’application connecté. Pour voir les adresses e-mail, ouvre Firebase, Authentication, Utilisateurs, et cherche l’identifiant copié ici."));
-  V.replaceChildren(head,lst,more);
-  let last=null,n=0;
-  const load=async()=>{
-    const q=F.query(F.collection(db,"stats"),F.orderBy("t","desc"),...(last?[F.startAfter(last)]:[]),F.limit(50));
-    const docs=(await F.getDocs(q)).docs;
-    docs.forEach(d=>{const x=d.data(),c=el("div","card"),r=el("div","row"),l=el("div");n++;
-      l.append(el("b","",n+". "+(MODE[x.m]||"–")+" · "+cname(x.ct)),el("br"),
-        el("span","muted","Inscrite : "+(when(x.c)||"avant le suivi")+" · Dernière activité : "+(when(x.t)||"–")),el("br"),
-        el("code","",d.id));
-      r.append(l,btn("Copier l’identifiant","",async()=>{try{await navigator.clipboard.writeText(d.id);toast("Identifiant copié")}catch(e){toast("Copie impossible")}}));
-      c.append(r);lst.append(c)});
-    last=docs[docs.length-1]||last;
-    more.replaceChildren();
-    if(docs.length===50)more.append(btn("Voir les suivantes","",()=>load().catch(err=>toast("Erreur : "+(err.code||err.message)))));
-    if(!n)lst.append(el("p","muted","Aucun compte pour l’instant."))};
-  await load()}
+  const [d,pb,total]=await Promise.all([allStats(),F.getDocs(F.query(F.collection(db,"pub"),F.limit(1000))).then(s=>s.docs,()=>[]),count("stats")]);
+  const ps={};pb.forEach(x=>ps[x.id]=x.data().ps||"");
+  const q=el("input");q.type="search";q.placeholder="Surnom ou identifiant";q.style.marginBottom="10px";
+  let flt="all";const bar=el("div","acts"),lst=el("div"),info=el("p","muted");
+  const draw=()=>{const k=q.value.trim().toLowerCase(),now=Date.now();
+    const r=d.filter(x=>(flt!=="in7"||ms(x.t)<now-7*DAY)&&(flt!=="ps"||ps[x.id])&&(!k||x.id.toLowerCase().includes(k)||(ps[x.id]||"").toLowerCase().includes(k)));
+    [...bar.children].forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.k===flt)));
+    info.textContent=r.length+" résultat"+(r.length>1?"s":"")+" sur "+total+" comptes"+(r.length>100?" (100 premiers affichés)":"");
+    lst.replaceChildren(...r.slice(0,100).map(x=>{const c=el("div","card"),w=el("div","row"),l=el("div");
+      l.append(el("b","",(ps[x.id]||"Sans surnom")+" · "+(MODE[x.m]||"–")+" · "+cname(x.ct)),el("br"),
+        el("span","muted","Inscrite : "+(when(x.c)||"avant le suivi")+" · Dernière activité : "+(when(x.t)||"–")),el("br"),el("code","",x.id));
+      w.append(l,btn("Copier l’ID","",async()=>{try{await navigator.clipboard.writeText(x.id);toast("Identifiant copié")}catch(e){toast("Copie impossible")}}));c.append(w);return c}))};
+  [["all","Toutes"],["in7","Inactives 7 j"],["ps","Avec surnom"]].forEach(([k,t])=>{const b=btn(t,"",()=>{flt=k;draw()});b.dataset.k=k;bar.append(b)});
+  q.addEventListener("input",draw);
+  V.replaceChildren(q,bar,info,lst,el("p","muted","L’âge n’est pas collecté par l’application. Les e-mails se consultent dans Firebase, Authentication."));draw()}
+
+async function rSys(){
+  const mref=F.doc(db,"config","maintenance");
+  const [ad,lgs,mt]=await Promise.all([F.getDocs(F.collection(db,"admins")).then(s=>s.docs.map(x=>x.id),()=>null),list("logs","t",30).catch(()=>null),F.getDoc(mref).then(s=>s.exists()?s.data():{},()=>({}))]);
+  const m=el("div","card"),on=!!mt.on;
+  m.append(el("b","","Mode maintenance : "+(on?"ACTIVÉ":"désactivé")),el("p","muted","Enregistre le réglage. L’application doit encore être mise à jour pour l’afficher aux utilisatrices."),
+    btn(on?"Désactiver":"Activer",on?"pri":"dng",async()=>{await F.setDoc(mref,{on:!on,t:F.serverTimestamp()});lg("Maintenance "+(!on?"activée":"désactivée"));rSys()}));
+  const a=el("div","card");a.append(el("b","","Administrateurs"));
+  if(ad===null)a.append(el("p","muted","Liste indisponible : ajoute la règle « allow list » sur admins."));
+  else ad.forEach(id=>{const r=el("p","muted");r.append(el("code","",id),document.createTextNode(id===auth.currentUser.uid?" (toi)":""));a.append(r)});
+  const l=el("div","card");l.append(el("b","","Journal des actions"));
+  if(!lgs||!lgs.length)l.append(el("p","muted",lgs?"Aucune action enregistrée.":"Journal indisponible : ajoute la règle sur logs."));
+  else lgs.forEach(x=>{const y=x.data();l.append(el("p","muted",when(y.t)+" · "+(y.u||"?")+" : "+(y.x||"")))});
+  V.replaceChildren(m,a,l,btn("Voir les signalements","",()=>go("rep")))}
+
 async function rAn(){
   const ref=F.doc(db,"config","announcement"),cur=await F.getDoc(ref),x=cur.exists()?cur.data():{};
   const ta=el("textarea");ta.value=x.on?(x.x||""):"";ta.placeholder="Ex. : Une nouvelle fonction est arrivée dans LUNÉA !";ta.maxLength=300;
   const st=el("p","muted",x.on?"Une annonce est actuellement affichée dans l’application.":"Aucune annonce n’est affichée.");
   const a=el("div","acts");
   a.append(btn("Publier","pri",async()=>{const t=ta.value.trim();if(!t){toast("Écris un message d’abord");return}
-      await F.setDoc(ref,{x:t,on:true,t:F.serverTimestamp()});st.textContent="Annonce publiée : elle apparaît à l’ouverture de l’application.";toast("Annonce publiée")}),
-    btn("Retirer l’annonce","dng",async()=>{await F.setDoc(ref,{x:"",on:false,t:F.serverTimestamp()});ta.value="";st.textContent="Aucune annonce n’est affichée.";toast("Annonce retirée")}));
+      await F.setDoc(ref,{x:t,on:true,t:F.serverTimestamp()});lg("Annonce publiée");st.textContent="Annonce publiée : elle apparaît à l’ouverture de l’application.";toast("Annonce publiée")}),
+    btn("Retirer l’annonce","dng",async()=>{await F.setDoc(ref,{x:"",on:false,t:F.serverTimestamp()});lg("Annonce retirée");ta.value="";st.textContent="Aucune annonce n’est affichée.";toast("Annonce retirée")}));
   const c=el("div","card");c.append(el("b","","Annonce à toutes les utilisatrices"),el("p","muted","Un bandeau s’affiche une fois en haut de l’application, avec une croix pour le fermer (300 caractères maximum)."),ta,a,st);
   V.replaceChildren(c)}
 
@@ -276,7 +295,7 @@ async function rRep(){
   if(!docs.length){V.append(el("p","muted","Aucun signalement."));return}
   docs.forEach(d=>{const x=d.data(),c=el("div","card"),r=el("div","row");
     const l=el("div");l.append(el("b","",x.n||x.k||"(sans nom)"),el("br"),el("span","tag",WHY[x.why]||x.why||"Autre"),el("span","muted"," "+(x.ty||"")+" · "+when(x.t)));
-    r.append(l,btn("Marquer comme traité","pri",async()=>{await F.deleteDoc(d.ref);c.remove();toast("Signalement traité")}));
+    r.append(l,btn("Marquer comme traité","pri",async()=>{await F.deleteDoc(d.ref);lg("Signalement traité : "+(x.n||x.k||""));c.remove();toast("Signalement traité")}));
     c.append(r);V.append(c)})}
 
 async function rCom(){
@@ -293,7 +312,7 @@ async function rCom(){
       btn("Supprimer le groupe","dng",async()=>{if(!confirm("Supprimer ce groupe et tous ses messages ?"))return;
         const ms=await F.getDocs(F.collection(d.ref,"msg"));
         for(let i=0;i<ms.docs.length;i+=400){const w=F.writeBatch(db);ms.docs.slice(i,i+400).forEach(m=>w.delete(m.ref));await w.commit()}
-        await F.deleteDoc(d.ref);c.remove();toast("Groupe supprimé")}));
+        await F.deleteDoc(d.ref);lg("Groupe supprimé : "+(x.n||d.id));c.remove();toast("Groupe supprimé")}));
     r.append(l,a);c.append(r,box);V.append(c)})}
 
 async function loadMsgs(gref,box){
@@ -302,7 +321,7 @@ async function loadMsgs(gref,box){
   box.replaceChildren();
   if(!ms.length){box.append(el("p","muted","Aucun message."));return}
   ms.forEach(m=>{const x=m.data(),e=el("div","msg"),h=el("div","row");
-    h.append(el("span","muted",(x.ps||"?")+" · "+when(x.t)),btn("Supprimer","dng",async()=>{await F.deleteDoc(m.ref);e.remove();toast("Message supprimé")}));
+    h.append(el("span","muted",(x.ps||"?")+" · "+when(x.t)),btn("Supprimer","dng",async()=>{await F.deleteDoc(m.ref);lg("Message supprimé dans un groupe");e.remove();toast("Message supprimé")}));
     e.append(h,el("p","",x.x||""));
     if(x.r)e.append(el("span","tag bad",x.r+" signalement"+(x.r>1?"s":"")));
     box.append(e)})}
