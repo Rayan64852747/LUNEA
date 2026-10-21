@@ -1480,10 +1480,11 @@ var t=document.createElement("span");t.style.flex="1";t.textContent=r.x;var c=do
 c.onclick=function(){try{localStorage.setItem("lunea-an",k)}catch(e){}b.remove()};b.appendChild(t);b.appendChild(c);document.body.appendChild(b)},function(){})}
 /* Statistiques anonymes : mode (cycle, grossesse, post-partum), pays, dates. Aucune donnée de santé. */
 function agBand(){try{if(!P.birth)return"";var a=Math.floor((today-D(P.birth))/315576e5);return a<18?"":a<25?"18-24":a<35?"25-34":a<45?"35-44":"45+"}catch(e){return""}}
+function snGen(n,uid){try{var s=String(n||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Za-z]/g,"").slice(0,2);if(!s||!uid)return"";var h=0,i;for(i=0;i<uid.length;i++)h=(h*31+uid.charCodeAt(i))%900;return s.charAt(0).toUpperCase()+s.slice(1).toLowerCase()+"-"+(100+h)}catch(e){return""}}
 function stPush(){var u=syUser();if(!u||syLocal()||!window.LF||!LF.D)return;
-var m=syMeta(),md=P.parc==="enceinte"?"preg":P.parc==="postpartum"?"pp":"cycle",zn=P.zone||"",ag=agBand(),k=md+"|"+(P.country||"")+"|"+zn+"|"+ag,now=Date.now();
+var m=syMeta(),md=P.parc==="enceinte"?"preg":P.parc==="postpartum"?"pp":"cycle",zn=P.zone||"",ag=agBand(),sn=snGen(P.name,u.uid),k=md+"|"+(P.country||"")+"|"+zn+"|"+ag+"|"+sn,now=Date.now();
 if(m.sk===k&&now-(m.sa||0)<864e5)return;
-var go=function(c){var o={m:md,ct:P.country||"",zn:zn,ag:ag,t:"__ts"};if(c)o.c="__ts";LF.D.set("stats/"+u.uid,o,true).then(function(){var n=syMeta();n.sk=k;n.sa=Date.now();n.sc=1;syMetaSet(n)},function(){})};
+var go=function(c){var o={m:md,ct:P.country||"",zn:zn,ag:ag,sn:sn,t:"__ts"};if(c)o.c="__ts";LF.D.set("stats/"+u.uid,o,true).then(function(){var n=syMeta();n.sk=k;n.sa=Date.now();n.sc=1;syMetaSet(n)},function(){})};
 if(m.sc)go(false);else LF.D.get("stats/"+u.uid).then(function(r){go(!r)},function(){go(false)})}
 function syDirty(){var m=syMeta();m.lt=Date.now();syMetaSet(m);clearTimeout(SY.t);SY.t=setTimeout(function(){syPush()},4000)}
 function syLocal(){try{return localStorage.getItem("lunea-local")==="1"}catch(e){return false}}
