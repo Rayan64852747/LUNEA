@@ -1470,10 +1470,22 @@ function syMeta(){try{return JSON.parse(localStorage.getItem("lunea-sync"))||{}}
 function syMetaSet(o){try{_set.call(localStorage,"lunea-sync",JSON.stringify(o))}catch(e){}}
 function snap(){var o={};SK.forEach(function(k){try{var v=localStorage.getItem(k);if(v!=null)o[k]=v}catch(e){}});return o}
 function syUser(){var lf=window.LF,u=lf&&lf.user&&lf.user(),m=syMeta();return u&&m.uid===u.uid?u:null}
+/* Annonce de l'équipe (publiée depuis la console d'administration) */
+function anShow(){var lf=window.LF;if(!lf||!lf.D)return;lf.D.get("config/announcement").then(function(r){if(!r||!r.on||!r.x)return;var k=String(r.t||"");try{if(localStorage.getItem("lunea-an")===k)return}catch(e){}
+if(document.getElementById("anB"))return;var b=document.createElement("div");b.id="anB";b.setAttribute("role","status");
+b.style.cssText="position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 10px);z-index:99999;max-width:456px;margin:0 auto;background:#51376F;color:#fff;border-radius:16px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;font:600 14px/1.4 Nunito,system-ui,sans-serif;box-shadow:0 8px 28px rgba(0,0,0,.35)";
+var t=document.createElement("span");t.style.flex="1";t.textContent=r.x;var c=document.createElement("button");c.type="button";c.setAttribute("aria-label","Fermer");c.textContent="✕";c.style.cssText="min-width:44px;min-height:44px;margin:-10px -8px -10px 0;border:0;background:transparent;color:#fff;font-size:18px;cursor:pointer";
+c.onclick=function(){try{localStorage.setItem("lunea-an",k)}catch(e){}b.remove()};b.appendChild(t);b.appendChild(c);document.body.appendChild(b)},function(){})}
+/* Statistiques anonymes : mode (cycle, grossesse, post-partum), pays, dates. Aucune donnée de santé. */
+function stPush(){var u=syUser();if(!u||syLocal()||!window.LF||!LF.D)return;
+var m=syMeta(),md=P.parc==="enceinte"?"preg":P.parc==="postpartum"?"pp":"cycle",k=md+"|"+(P.country||""),now=Date.now();
+if(m.sk===k&&now-(m.sa||0)<864e5)return;
+var go=function(c){var o={m:md,ct:P.country||"",t:"__ts"};if(c)o.c="__ts";LF.D.set("stats/"+u.uid,o,true).then(function(){var n=syMeta();n.sk=k;n.sa=Date.now();n.sc=1;syMetaSet(n)},function(){})};
+if(m.sc)go(false);else LF.D.get("stats/"+u.uid).then(function(r){go(!r)},function(){go(false)})}
 function syDirty(){var m=syMeta();m.lt=Date.now();syMetaSet(m);clearTimeout(SY.t);SY.t=setTimeout(function(){syPush()},4000)}
 function syLocal(){try{return localStorage.getItem("lunea-local")==="1"}catch(e){return false}}
 function syPush(){clearTimeout(SY.t);SY.t=null;var u=syUser();if(!u||syLocal())return Promise.resolve(false);var m=syMeta(),lt=m.lt||Date.now();
-var p=window.LF.push(u.uid,snap(),lt).then(function(){var n=syMeta();n.st=Date.now();syMetaSet(n);if(SY.inflight===p)SY.inflight=null;syShow();return true},function(){if(SY.inflight===p)SY.inflight=null;syShow();return false});
+var p=window.LF.push(u.uid,snap(),lt).then(function(){var n=syMeta();n.st=Date.now();syMetaSet(n);if(SY.inflight===p)SY.inflight=null;syShow();try{stPush()}catch(e){}return true},function(){if(SY.inflight===p)SY.inflight=null;syShow();return false});
 SY.inflight=p;syShow();return Promise.race([p,new Promise(function(r){setTimeout(function(){r(false)},10000)})])}
 function syApply(r,uid){SY.mute=1;try{SK.forEach(function(k){_rm.call(localStorage,k)});Object.keys(r.data||{}).forEach(function(k){if(SK.indexOf(k)>-1&&typeof r.data[k]==="string")_set.call(localStorage,k,r.data[k])})}catch(e){}SY.mute=0;
 var m=syMeta();syMetaSet({uid:uid,lt:r.c||Date.now(),st:Date.now(),email:m.uid===uid?m.email:""});
@@ -2564,7 +2576,7 @@ if(t.dataset.lg){setLang(t.dataset.lg);renderMn();return}
 if(t.dataset.ut){P.ut=t.dataset.ut;save();renderMn();return}if(t.dataset.uw){P.uw=t.dataset.uw;save();renderMn();return}
 var a=t.dataset.act;
 if(a==="prof"){var n=$("mnN").value.trim(),p=$("mnP").value;if(!n){say("Indique ton prénom.");return}P.name=n;if(p!==P.parc){P.parc=p;HM.mode=p==="enceinte"?"preg":p==="postpartum"?"pp":"cycle"}save();cyDirty=1;say("Profil enregistré.")}
-else if(a==="locon"){if(!t.dataset.arm){t.dataset.arm="1";t.textContent="Confirmer : effacer la copie en ligne";return}var u2=syUser();t.disabled=true;lfReady().then(function(lf){if(!lf||!u2)throw 0;return lf.D.del("users/"+u2.uid)}).then(function(){try{_set.call(localStorage,"lunea-local","1")}catch(x){}clearTimeout(SY.t);SY.t=null;renderMn();say("Mode 100 % téléphone activé. La copie en ligne est effacée.")},function(){t.disabled=false;delete t.dataset.arm;t.textContent=t.dataset.txt;say("Impossible d’effacer la copie en ligne. Vérifie ta connexion et réessaie.")});return}
+else if(a==="locon"){if(!t.dataset.arm){t.dataset.arm="1";t.textContent="Confirmer : effacer la copie en ligne";return}var u2=syUser();t.disabled=true;lfReady().then(function(lf){if(!lf||!u2)throw 0;return lf.D.del("users/"+u2.uid).then(function(){return lf.D.del("stats/"+u2.uid).catch(function(){})})}).then(function(){try{_set.call(localStorage,"lunea-local","1")}catch(x){}clearTimeout(SY.t);SY.t=null;renderMn();say("Mode 100 % téléphone activé. La copie en ligne est effacée.")},function(){t.disabled=false;delete t.dataset.arm;t.textContent=t.dataset.txt;say("Impossible d’effacer la copie en ligne. Vérifie ta connexion et réessaie.")});return}
 else if(a==="locoff"){try{_rm.call(localStorage,"lunea-local")}catch(x){}syDirty();syPush();renderMn();say("Sauvegarde en ligne réactivée.");return}
 else if(a==="exp"){var o={};KEYS.forEach(function(k){try{var v=localStorage.getItem(k);if(v)o[k]=JSON.parse(v)}catch(x){}});say(dl("lunea-mes-donnees-"+iso(today)+".json",JSON.stringify(o,null,2))?"Copie téléchargée.":"Téléchargement impossible sur cet appareil.")}
 else if(a==="wipe")twice(t,function(){cyDirty=0;closeAllOv();closeHome();act("restart");say("Toutes tes données ont été effacées.")});
@@ -3074,7 +3086,7 @@ if(!ml)for(var k=QB.length-1;k>=0;k--)if(/paludisme/i.test(QB[k][0]))QB.splice(k
 try{rgApply()}catch(e){}
 /* ===== Démarrage : session enregistrée ===== */
 (function(){var m=syMeta();if(!(m.uid&&P.done))return;HM.mode=P.parc==="enceinte"?"preg":P.parc==="postpartum"?"pp":"cycle";try{applyPers()}catch(e){}document.body.classList.toggle("discret",!!P.discret);openHome()})();
-lfReady().then(function(lf){if(!lf)return;lf.onUser(function(u){SY.user=u||null;var m=syMeta();
+lfReady().then(function(lf){if(!lf)return;lf.onUser(function(u){SY.user=u||null;var m=syMeta();if(u)setTimeout(function(){try{stPush()}catch(e){}},3000);if(u)setTimeout(function(){try{anShow()}catch(e){}},3500);
 if(u&&m.uid===u.uid){if(u.email&&m.email!==u.email){m.email=u.email;syMetaSet(m)}
 if(!syLocal())lf.pull(u.uid).then(function(r){var n=syMeta();if(SY.t||SY.inflight)return;
 if(r&&r.data&&(r.c||0)>(n.lt||0)){syApply(r,u.uid);if(hm.classList.contains("on")&&!ov.length&&P.done)openHome();else cyDirty=1}

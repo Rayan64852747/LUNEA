@@ -1,5 +1,5 @@
 /* Lunéa : fonctionnement hors connexion */
-const CACHE = "lunea-v68";
+const CACHE = "lunea-v69";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-180.png"];
 
 self.addEventListener("install", (e) => {
@@ -40,6 +40,8 @@ self.addEventListener("fetch", (e) => {
     return;
   }
   if (url.origin !== location.origin) return;
+  // Console admin : jamais mise en cache, jamais confondue avec l'application
+  if (url.pathname.endsWith("/admin.html")) return;
   // Pages : réseau d'abord, cache si hors connexion
   if (req.mode === "navigate") {
     e.respondWith(
