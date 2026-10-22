@@ -1562,7 +1562,7 @@ function gGo(b){busy(b,true);lfReady().then(function(lf){if(!lf)throw{code:"lf"}
 .catch(function(x){var m=aerr(x);if(m)say(m)}).then(function(){busy(b,false)})}
 function signedIn(u,m){var lf=window.LF;return lf.pull(u.uid).then(function(r){var meta=syMeta();
 if(r&&r.data){if(meta.uid===u.uid&&(meta.lt||0)>(r.c||0))syPush();else syApply(r,u.uid)}
-else{if(meta.uid&&meta.uid!==u.uid){syReset();P={}}syMetaSet({uid:u.uid,lt:Date.now()});if(Object.keys(snap()).length)syPush()}
+else{if(meta.uid&&meta.uid!==u.uid){syReset();P={}}syMetaSet({uid:u.uid,lt:Date.now()});setTimeout(function(){try{stPush()}catch(e){}},800);if(Object.keys(snap()).length)syPush()}
 var m2=syMeta();m2.email=u.email||"";syMetaSet(m2);SY.user=u;authed(m)},function(x){try{lf.out()}catch(e){}throw x})}
 function card(type,name,val,txt,chk){return '<label class="card"><input type="'+type+'" name="'+name+'" value="'+val+'"'+(chk?" checked":"")+'><span>'+txt+'</span></label>'}
 function step2(id,lbl,key,min,max,unk){return '<div class="fld"><span class="lbl" id="l-'+key+'">'+lbl+'</span><div class="stp2" role="group" aria-labelledby="l-'+key+'"><button type="button" class="bk" data-act="dec" data-k="'+key+'" data-min="'+min+'" aria-label="Moins">−</button><output id="v-'+key+'">'+S3[key]+' jours</output><button type="button" class="bk" data-act="inc" data-k="'+key+'" data-max="'+max+'" aria-label="Plus">+</button></div>'+(unk?'<label class="mini"><input type="checkbox" id="u-'+key+'"'+(P[key]===null?" checked":"")+'> Je ne sais pas</label>':'')+'</div>'}
@@ -3090,7 +3090,7 @@ if(!ml)for(var k=QB.length-1;k>=0;k--)if(/paludisme/i.test(QB[k][0]))QB.splice(k
 try{rgApply()}catch(e){}
 /* ===== Démarrage : session enregistrée ===== */
 (function(){var m=syMeta();if(!(m.uid&&P.done))return;HM.mode=P.parc==="enceinte"?"preg":P.parc==="postpartum"?"pp":"cycle";try{applyPers()}catch(e){}document.body.classList.toggle("discret",!!P.discret);openHome()})();
-lfReady().then(function(lf){if(!lf)return;lf.onUser(function(u){SY.user=u||null;var m=syMeta();if(u)setTimeout(function(){try{stPush()}catch(e){}},3000);if(u)setTimeout(function(){try{anShow()}catch(e){}},3500);
+lfReady().then(function(lf){if(!lf)return;lf.onUser(function(u){SY.user=u||null;var m=syMeta();if(u){setTimeout(function(){try{stPush()}catch(e){}},3000);setTimeout(function(){try{stPush()}catch(e){}},12000)}if(u)setTimeout(function(){try{anShow()}catch(e){}},3500);
 if(u&&m.uid===u.uid){if(u.email&&m.email!==u.email){m.email=u.email;syMetaSet(m)}
 if(!syLocal())lf.pull(u.uid).then(function(r){var n=syMeta();if(SY.t||SY.inflight)return;
 if(r&&r.data&&(r.c||0)>(n.lt||0)){syApply(r,u.uid);if(hm.classList.contains("on")&&!ov.length&&P.done)openHome();else cyDirty=1}
