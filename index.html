@@ -134,7 +134,7 @@ html[lang="en"] .tag{font-size:min(17px,3.5vw)}
 .stp2 output{font-weight:700;font-size:18px}
 .mini{display:flex;align-items:center;gap:8px;font-size:15px;min-height:44px}
 .lk{background:none;border:0;color:var(--rose);font:700 16px Nunito,sans-serif;text-decoration:underline;min-height:44px;cursor:pointer;padding:0 4px}
-.ok{width:84px;height:84px;border-radius:50%;background:var(--btn-bg);color:var(--btn-ink);display:flex;align-items:center;justify-content:center;animation:pop .5s cubic-bezier(.2,.9,.3,1.4) both}
+.ok:not(.msi):not(button){width:84px;height:84px;border-radius:50%;background:var(--btn-bg);color:var(--btn-ink);display:flex;align-items:center;justify-content:center;animation:pop .5s cubic-bezier(.2,.9,.3,1.4) both}
 @keyframes pop{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
 .sum p{margin:6px 0;font-size:17px;line-height:1.4}
 .app h2:focus{outline:none}
